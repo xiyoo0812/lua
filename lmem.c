@@ -28,6 +28,9 @@
 ** (This fail will trigger 'tryagain' and a full GC cycle at every
 ** allocation.)
 */
+/*
+尝试分配内存
+*/
 static void *firsttry (global_State *g, void *block, size_t os, size_t ns) {
   if (completestate(g) && ns > 0)  /* frees never fail */
     return NULL;  /* fail */
@@ -76,6 +79,9 @@ static void *firsttry (global_State *g, void *block, size_t os, size_t ns) {
 #define MINSIZEARRAY	4
 
 
+/*
+扩展一个指定类型t数组的内存，正常则是扩展size*2
+*/
 void *luaM_growaux_ (lua_State *L, void *block, int nelems, int *psize,
                      int size_elems, int limit, const char *what) {
   void *newblock;
@@ -107,6 +113,9 @@ void *luaM_growaux_ (lua_State *L, void *block, int nelems, int *psize,
 ** to its number of elements, the only option is to raise an
 ** error.
 */
+/*
+缩小一个指定类型t数组的内存
+*/
 void *luaM_shrinkvector_ (lua_State *L, void *block, int *size,
                           int final_n, int size_elem) {
   void *newblock;
@@ -121,6 +130,9 @@ void *luaM_shrinkvector_ (lua_State *L, void *block, int *size,
 /* }================================================================== */
 
 
+/*
+抛出一个分配内存过大的运行时错误
+*/
 l_noret luaM_toobig (lua_State *L) {
   luaG_runerror(L, "memory allocation error: block too big");
 }
@@ -128,6 +140,9 @@ l_noret luaM_toobig (lua_State *L) {
 
 /*
 ** Free memory
+*/
+/*
+释放指定长度osize的内存block
 */
 void luaM_free_ (lua_State *L, void *block, size_t osize) {
   global_State *g = G(L);
@@ -145,6 +160,9 @@ void luaM_free_ (lua_State *L, void *block, size_t osize) {
 ** when 'gcstopem' is true, because then the interpreter is in the
 ** middle of a collection step.
 */
+/*
+当内存分配失败后，先尝试gc释放内存，然后重试分配
+*/
 static void *tryagain (lua_State *L, void *block,
                        size_t osize, size_t nsize) {
   global_State *g = G(L);
@@ -158,6 +176,11 @@ static void *tryagain (lua_State *L, void *block,
 
 /*
 ** Generic allocation routine.
+** If allocation fails while shrinking a block, do not try again; the
+** GC shrinks some blocks and it is not reentrant.
+*/
+/*
+重新分配内存，需要copy原有block的数据
 */
 void *luaM_realloc_ (lua_State *L, void *block, size_t osize, size_t nsize) {
   void *newblock;
@@ -175,6 +198,10 @@ void *luaM_realloc_ (lua_State *L, void *block, size_t osize, size_t nsize) {
 }
 
 
+/*
+安全调用，分配失败则抛出错误
+重新分配内存，需要copy原有block的数据
+*/
 void *luaM_saferealloc_ (lua_State *L, void *block, size_t osize,
                                                     size_t nsize) {
   void *newblock = luaM_realloc_(L, block, osize, nsize);
@@ -184,6 +211,9 @@ void *luaM_saferealloc_ (lua_State *L, void *block, size_t osize,
 }
 
 
+/*
+分配指定长度size的新内存
+*/
 void *luaM_malloc_ (lua_State *L, size_t size, int tag) {
   if (size == 0)
     return NULL;  /* that's all */

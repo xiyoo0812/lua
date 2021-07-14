@@ -32,6 +32,9 @@
 /*
 ** Computes ceil(log2(x))
 */
+/*
+log（2）取整
+*/
 int luaO_ceillog2 (unsigned int x) {
   static const lu_byte log_2[256] = {  /* log_2[i] = ceil(log2(i - 1)) */
     0,1,2,2,3,3,3,3,4,4,4,4,4,4,4,4,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,
@@ -50,6 +53,9 @@ int luaO_ceillog2 (unsigned int x) {
 }
 
 
+/*
+整数运算
+*/
 static lua_Integer intarith (lua_State *L, int op, lua_Integer v1,
                                                    lua_Integer v2) {
   switch (op) {
@@ -70,6 +76,9 @@ static lua_Integer intarith (lua_State *L, int op, lua_Integer v1,
 }
 
 
+/*
+数字运算
+*/
 static lua_Number numarith (lua_State *L, int op, lua_Number v1,
                                                   lua_Number v2) {
   switch (op) {
@@ -86,6 +95,9 @@ static lua_Number numarith (lua_State *L, int op, lua_Number v1,
 }
 
 
+/*
+源运算
+*/
 int luaO_rawarith (lua_State *L, int op, const TValue *p1, const TValue *p2,
                    TValue *res) {
   switch (op) {
@@ -123,6 +135,9 @@ int luaO_rawarith (lua_State *L, int op, const TValue *p1, const TValue *p2,
 }
 
 
+/*
+lua栈数学运算接口
+*/
 void luaO_arith (lua_State *L, int op, const TValue *p1, const TValue *p2,
                  StkId res) {
   if (!luaO_rawarith(L, op, p1, p2, s2v(res))) {
@@ -132,12 +147,18 @@ void luaO_arith (lua_State *L, int op, const TValue *p1, const TValue *p2,
 }
 
 
+/*
+将一个16进制字符转换成10进制数字
+*/
 int luaO_hexavalue (int c) {
   if (lisdigit(c)) return c - '0';
   else return (ltolower(c) - 'a') + 10;
 }
 
 
+/*
+判断一个字符串数字是否负数
+*/
 static int isneg (const char **s) {
   if (**s == '-') { (*s)++; return 1; }
   else if (**s == '+') (*s)++;
@@ -248,6 +269,10 @@ static const char *l_str2dloc (const char *s, lua_Number *result, int mode) {
 ** - 'x' means a hexadecimal numeral
 ** - '.' just optimizes the search for the common case (no special chars)
 */
+/*
+将一个string转换成double
+strpbrk(str1, str2): 检索字符串 str1 中第一个匹配字符串 str2 中字符的字符
+*/
 static const char *l_str2d (const char *s, lua_Number *result) {
   const char *endptr;
   const char *pmode = strpbrk(s, ".xXnN");  /* look for special chars */
@@ -273,6 +298,9 @@ static const char *l_str2d (const char *s, lua_Number *result) {
 #define MAXBY10		cast(lua_Unsigned, LUA_MAXINTEGER / 10)
 #define MAXLASTD	cast_int(LUA_MAXINTEGER % 10)
 
+/*
+将一个string转换成整数
+*/
 static const char *l_str2int (const char *s, lua_Integer *result) {
   lua_Unsigned a = 0;
   int empty = 1;
@@ -305,6 +333,9 @@ static const char *l_str2int (const char *s, lua_Integer *result) {
 }
 
 
+/*
+将一个string转换成number
+*/
 size_t luaO_str2num (const char *s, TValue *o) {
   lua_Integer i; lua_Number n;
   const char *e;
@@ -352,6 +383,10 @@ int luaO_utf8esc (char *buff, unsigned long x) {
 /*
 ** Convert a number object to a string, adding it to a buffer
 */
+/*
+将一个number转换成string，输出到buff中
+strspn(str1, str2): 检索字符串 str1 中第一个不在字符串 str2 中出现的字符下标
+*/
 static int tostringbuff (TValue *obj, char *buff) {
   int len;
   lua_assert(ttisnumber(obj));
@@ -371,6 +406,9 @@ static int tostringbuff (TValue *obj, char *buff) {
 /*
 ** Convert a number object to a Lua string, replacing the value at 'obj'
 */
+/*
+将一个number转换成string
+*/
 void luaO_tostring (lua_State *L, TValue *obj) {
   char buff[MAXNUMBER2STR];
   int len = tostringbuff(obj, buff);
@@ -389,6 +427,9 @@ void luaO_tostring (lua_State *L, TValue *obj) {
 /* size for buffer space used by 'luaO_pushvfstring' */
 #define BUFVFS		200
 
+/*
+用于格式化字符串的buff对象
+*/
 /* buffer used by 'luaO_pushvfstring' */
 typedef struct BuffFS {
   lua_State *L;
@@ -401,6 +442,10 @@ typedef struct BuffFS {
 /*
 ** Push given string to the stack, as part of the buffer, and
 ** join the partial strings in the stack into one.
+*/
+/*
+将指定字符串先push到栈上，并记录push的次数（pushed）
+如果push次数大于1，并且栈空间不够，那么将buff已经push到栈上的内容连接（concat）到一起
 */
 static void pushstr (BuffFS *buff, const char *str, size_t l) {
   lua_State *L = buff->L;
@@ -415,6 +460,10 @@ static void pushstr (BuffFS *buff, const char *str, size_t l) {
 /*
 ** empty the buffer space into the stack
 */
+/*
+清空buff内容（通过设置长度围殴0）
+备注：提交str到栈上
+*/
 static void clearbuff (BuffFS *buff) {
   pushstr(buff, buff->space, buff->blen);  /* push buffer contents */
   buff->blen = 0;  /* space now is empty */
@@ -425,6 +474,9 @@ static void clearbuff (BuffFS *buff) {
 ** Get a space of size 'sz' in the buffer. If buffer has not enough
 ** space, empty it. 'sz' must fit in an empty buffer.
 */
+/*
+返回buff中指定长度（sz）的可写char地址
+*/
 static char *getbuff (BuffFS *buff, int sz) {
   lua_assert(buff->blen <= BUFVFS); lua_assert(sz <= BUFVFS);
   if (sz > BUFVFS - buff->blen)  /* not enough space? */
@@ -433,12 +485,18 @@ static char *getbuff (BuffFS *buff, int sz) {
 }
 
 
+/*
+增加buff的size
+*/
 #define addsize(b,sz)	((b)->blen += (sz))
 
 
 /*
 ** Add 'str' to the buffer. If string is larger than the buffer space,
 ** push the string directly to the stack.
+*/
+/*
+添加指定长度字符串到buff中
 */
 static void addstr2buff (BuffFS *buff, const char *str, size_t slen) {
   if (slen <= BUFVFS) {  /* does string fit into buffer? */
@@ -456,6 +514,9 @@ static void addstr2buff (BuffFS *buff, const char *str, size_t slen) {
 /*
 ** Add a number to the buffer.
 */
+/*
+添加数字到buff中
+*/
 static void addnum2buff (BuffFS *buff, TValue *num) {
   char *numbuff = getbuff(buff, MAXNUMBER2STR);
   int len = tostringbuff(num, numbuff);  /* format number into 'numbuff' */
@@ -466,6 +527,10 @@ static void addnum2buff (BuffFS *buff, TValue *num) {
 /*
 ** this function handles only '%d', '%c', '%f', '%p', '%s', and '%%'
    conventional formats, plus Lua-specific '%I' and '%U'
+*/
+/*
+压入指定fmt格式字符串到栈顶，接收参数va_list
+strchr(str, c): 在str中查询第一个c出现位置，没有则返回null
 */
 const char *luaO_pushvfstring (lua_State *L, const char *fmt, va_list argp) {
   BuffFS buff;  /* holds last part of the result */
@@ -536,6 +601,9 @@ const char *luaO_pushvfstring (lua_State *L, const char *fmt, va_list argp) {
 }
 
 
+/*
+压入指定fmt格式字符串到栈顶，接收参数...
+*/
 const char *luaO_pushfstring (lua_State *L, const char *fmt, ...) {
   const char *msg;
   va_list argp;
@@ -554,6 +622,9 @@ const char *luaO_pushfstring (lua_State *L, const char *fmt, ...) {
 
 #define addstr(a,b,l)	( memcpy(a,b,(l) * sizeof(char)), a += (l) )
 
+/*
+生成代码块的chunkid，通常用于debug库显示源代码信息
+*/
 void luaO_chunkid (char *out, const char *source, size_t srclen) {
   size_t bufflen = LUA_IDSIZE;  /* free space in buffer */
   if (*source == '=') {  /* 'literal' source */

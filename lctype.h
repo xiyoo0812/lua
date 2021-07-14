@@ -45,6 +45,7 @@
 
 #define MASK(B)		(1 << (B))
 
+//本文件用于lua代码词法分析，解析代码字符，可以使用ctype，也可以使用自定义接口。
 
 /*
 ** add 1 to char to allow index -1 (EOZ)
@@ -54,7 +55,29 @@
 /*
 ** 'lalpha' (Lua alphabetic) and 'lalnum' (Lua alphanumeric) both include '_'
 */
+
+/*
+- 表中的二进制值
+- 0x04       对应的二进制为   00000100  
+- 0x16       对应的二进制为   00010110
+- 0x15       对应的二进制为   00010101
+- 0x05       对应的二进制为   00000101
+- 0x08       对应的二进制为   00001000
+- 0x0c       对应的二进制为   00001100
+- 0x00       对应的二进制为   00000000
+*/
+
+/*
+    MASK(ALPHABIT) == 1，testprop中p为1，若要结果为真，
+    则传入的c在luai_ctype_表中对应值二进制末尾是1，符合条件的有0x05, 0x15
+    对于的index(c+1)刚好是66-91，98-123，那么c自然和ascii码对应上了
+*/
 #define lislalpha(c)	testprop(c, MASK(ALPHABIT))
+/*
+    MASK(ALPHABIT) == 1，MASK(DIGITBIT) == 2，testprop中p为3，若要结果为真，
+    则传入的c在luai_ctype_表中对应值二进制末2尾是必须有1，符合条件的有0x05, 0x15，0x16
+    对于的index(c+1)刚好是49-58,66-91，98-123，那么c自然和ascii码对应上了
+*/
 #define lislalnum(c)	testprop(c, (MASK(ALPHABIT) | MASK(DIGITBIT)))
 #define lisdigit(c)	testprop(c, MASK(DIGITBIT))
 #define lisspace(c)	testprop(c, MASK(SPACEBIT))

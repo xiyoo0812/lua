@@ -31,6 +31,9 @@
 /*
 ** equality for long strings
 */
+/*
+判断长字符串相等
+*/
 int luaS_eqlngstr (TString *a, TString *b) {
   size_t len = a->u.lnglen;
   lua_assert(a->tt == LUA_VLNGSTR && b->tt == LUA_VLNGSTR);
@@ -40,6 +43,9 @@ int luaS_eqlngstr (TString *a, TString *b) {
 }
 
 
+/*
+返回字符串的hash值
+*/
 unsigned int luaS_hash (const char *str, size_t l, unsigned int seed) {
   unsigned int h = seed ^ cast_uint(l);
   for (; l > 0; l--)
@@ -48,6 +54,9 @@ unsigned int luaS_hash (const char *str, size_t l, unsigned int seed) {
 }
 
 
+/*
+返回长字符串的hash，没有则生成
+*/
 unsigned int luaS_hashlongstr (TString *ts) {
   lua_assert(ts->tt == LUA_VLNGSTR);
   if (ts->extra == 0) {  /* no hash? */
@@ -59,6 +68,13 @@ unsigned int luaS_hashlongstr (TString *ts) {
 }
 
 
+/*
+string table重新hash
+lmod是取余操作
+如果延长的话，hash大于osize的可能会落到nsize去
+如果缩小的话，hash大于nsize的需要重新落到nsize
+vect[i] = NULL不会影响计算，不产生重复计算
+*/
 static void tablerehash (TString **vect, int osize, int nsize) {
   int i;
   for (i = osize; i < nsize; i++)  /* clear new elements */
@@ -81,6 +97,11 @@ static void tablerehash (TString **vect, int osize, int nsize) {
 ** Resize the string table. If allocation fails, keep the current size.
 ** (This can degrade performance, but any non-zero size should work
 ** correctly.)
+*/
+/*
+重新设置_G的string table的size
+分配内存失败会还原st
+unlikely: 优化选项，更不可能发生
 */
 void luaS_resize (lua_State *L, int nsize) {
   stringtable *tb = &G(L)->strt;
@@ -107,6 +128,9 @@ void luaS_resize (lua_State *L, int nsize) {
 ** Clear API string cache. (Entries cannot be empty, so fill them with
 ** a non-collectable string.)
 */
+/*
+清除即将被回收的字符串缓存
+*/
 void luaS_clearcache (global_State *g) {
   int i, j;
   for (i = 0; i < STRCACHE_N; i++)
@@ -119,6 +143,9 @@ void luaS_clearcache (global_State *g) {
 
 /*
 ** Initialize the string table and the string cache
+*/
+/*
+初始化_G的string table
 */
 void luaS_init (lua_State *L) {
   global_State *g = G(L);
@@ -140,6 +167,9 @@ void luaS_init (lua_State *L) {
 /*
 ** creates a new string object
 */
+/*
+创建一个string对象
+*/
 static TString *createstrobj (lua_State *L, size_t l, int tag, unsigned int h) {
   TString *ts;
   GCObject *o;
@@ -154,6 +184,9 @@ static TString *createstrobj (lua_State *L, size_t l, int tag, unsigned int h) {
 }
 
 
+/*
+创建一个长string对象
+*/
 TString *luaS_createlngstrobj (lua_State *L, size_t l) {
   TString *ts = createstrobj(L, l, LUA_VLNGSTR, G(L)->seed);
   ts->u.lnglen = l;
@@ -161,6 +194,10 @@ TString *luaS_createlngstrobj (lua_State *L, size_t l) {
 }
 
 
+/*
+从string table中删除指定string
+根据string的hash从表中找到，然后从链表中删除
+*/
 void luaS_remove (lua_State *L, TString *ts) {
   stringtable *tb = &G(L)->strt;
   TString **p = &tb->hash[lmod(ts->hash, tb->size)];
@@ -171,6 +208,10 @@ void luaS_remove (lua_State *L, TString *ts) {
 }
 
 
+/*
+扩展string table，直接size*2
+内存不足则先gc一波，再尝试
+*/
 static void growstrtab (lua_State *L, stringtable *tb) {
   if (l_unlikely(tb->nuse == MAX_INT)) {  /* too many strings? */
     luaC_fullgc(L, 1);  /* try to free some... */
@@ -184,6 +225,9 @@ static void growstrtab (lua_State *L, stringtable *tb) {
 
 /*
 ** Checks whether short string exists and reuses it or creates a new one.
+*/
+/*
+生成一个短字符串，先到string table中根据hash查询
 */
 static TString *internshrstr (lua_State *L, const char *str, size_t l) {
   TString *ts;
@@ -218,6 +262,9 @@ static TString *internshrstr (lua_State *L, const char *str, size_t l) {
 /*
 ** new string (with explicit length)
 */
+/*
+创建一个新字符串，根据长度决定创建长字符串还是短字符串
+*/
 TString *luaS_newlstr (lua_State *L, const char *str, size_t l) {
   if (l <= LUAI_MAXSHORTLEN)  /* short string? */
     return internshrstr(L, str, l);
@@ -238,6 +285,9 @@ TString *luaS_newlstr (lua_State *L, const char *str, size_t l) {
 ** only zero-terminated strings, so it is safe to use 'strcmp' to
 ** check hits.
 */
+/*
+创建一个新的string，先查询cache
+*/
 TString *luaS_new (lua_State *L, const char *str) {
   unsigned int i = point2uint(str) % STRCACHE_N;  /* hash */
   int j;
@@ -255,6 +305,9 @@ TString *luaS_new (lua_State *L, const char *str) {
 }
 
 
+/*
+创建一个userdata
+*/
 Udata *luaS_newudata (lua_State *L, size_t s, int nuvalue) {
   Udata *u;
   int i;

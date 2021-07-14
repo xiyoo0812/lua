@@ -387,15 +387,28 @@ typedef struct TString {
 /*
 ** Get the actual string (array of bytes) from a 'TString'.
 */
+/*
+返回TString的真实字符串地址
+*/
+
 #define getstr(ts)  ((ts)->contents)
 
 
+/*
+TValue转换成TString
+*/
 /* get the actual string (array of bytes) from a Lua value */
 #define svalue(o)       getstr(tsvalue(o))
 
+/*
+返回ts的长度len
+*/
 /* get string length from 'TString *s' */
 #define tsslen(s)	((s)->tt == LUA_VSHRSTR ? (s)->shrlen : (s)->u.lnglen)
 
+/*
+返回tvalue的长度len
+*/
 /* get string length from 'TValue *o' */
 #define vslen(o)	tsslen(tsvalue(o))
 

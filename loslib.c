@@ -77,6 +77,10 @@
 #endif				/* } */
 
 
+/*
+l_gmtime: 获取标准时间
+l_localtime: 获取本地时间
+*/
 #if !defined(l_gmtime)		/* { */
 /*
 ** By default, Lua uses gmtime/localtime, except when POSIX is available,
@@ -91,6 +95,9 @@
 #else				/* }{ */
 
 /* ISO C definitions */
+/*
+逗号运算符，取最后一个值，这里的(void)(r)->tm_sec估计是为了和POSIX接口对应使用的占位信息
+*/
 #define l_gmtime(t,r)		((void)(r)->tm_sec, gmtime(t))
 #define l_localtime(t,r)	((void)(r)->tm_sec, localtime(t))
 
@@ -107,6 +114,9 @@
 ** By default, Lua uses tmpnam except when POSIX is available, where
 ** it uses mkstemp.
 ** ===================================================================
+*/
+/*
+lua_tmpnam: 生成临时文件名
 */
 #if !defined(lua_tmpnam)	/* { */
 
@@ -139,6 +149,10 @@
 
 
 
+/*
+执行一个shell指令，主要使用系统提供的system函数实现
+此函数会阻塞当前进程，等待shell执行完成后唤醒继续执行
+*/
 static int os_execute (lua_State *L) {
   const char *cmd = luaL_optstring(L, 1, NULL);
   int stat;
@@ -153,12 +167,18 @@ static int os_execute (lua_State *L) {
 }
 
 
+/*
+删除一个文件或目录，注意，在windows下删除目录会失败
+*/
 static int os_remove (lua_State *L) {
   const char *filename = luaL_checkstring(L, 1);
   return luaL_fileresult(L, remove(filename) == 0, filename);
 }
 
 
+/*
+文件重命名
+*/
 static int os_rename (lua_State *L) {
   const char *fromname = luaL_checkstring(L, 1);
   const char *toname = luaL_checkstring(L, 2);
@@ -166,6 +186,9 @@ static int os_rename (lua_State *L) {
 }
 
 
+/*
+生产临时文件名
+*/
 static int os_tmpname (lua_State *L) {
   char buff[LUA_TMPNAMBUFSIZE];
   int err;
@@ -177,12 +200,19 @@ static int os_tmpname (lua_State *L) {
 }
 
 
+/*
+获取系统环境变量
+*/
 static int os_getenv (lua_State *L) {
   lua_pushstring(L, getenv(luaL_checkstring(L, 1)));  /* if NULL push nil */
   return 1;
 }
 
 
+/*
+获取进程使用CPU时间的近似值，精度为秒
+需要注意的是当运行时间过长的时候可能会溢出返回负值
+*/
 static int os_clock (lua_State *L) {
   lua_pushnumber(L, ((lua_Number)clock())/(lua_Number)CLOCKS_PER_SEC);
   return 1;
@@ -206,6 +236,10 @@ static int os_clock (lua_State *L) {
 ** time 0x1.e1853b0d184f6p+55 would cause an overflow when adding 1900
 ** to compute the year.
 */
+/*
+设置lua表的int字段，delta表示需要附加的值
+先插入value到栈顶，再设置到table的key位置，-2是table在栈上索引
+*/
 static void setfield (lua_State *L, const char *key, int value, int delta) {
   #if (defined(LUA_NUMTIME) && LUA_MAXINTEGER <= INT_MAX)
     if (l_unlikely(value > LUA_MAXINTEGER - delta))
@@ -216,6 +250,9 @@ static void setfield (lua_State *L, const char *key, int value, int delta) {
 }
 
 
+/*
+设置lua表的bool字段
+*/
 static void setboolfield (lua_State *L, const char *key, int value) {
   if (value < 0)  /* undefined? */
     return;  /* does not set field */
@@ -226,6 +263,9 @@ static void setboolfield (lua_State *L, const char *key, int value) {
 
 /*
 ** Set all fields from structure 'tm' in the table on top of the stack
+*/
+/*
+设置tm结构体的所有字段
 */
 static void setallfields (lua_State *L, struct tm *stm) {
   setfield(L, "year", stm->tm_year, 1900);
@@ -240,6 +280,9 @@ static void setallfields (lua_State *L, struct tm *stm) {
 }
 
 
+/*
+获取table中的key索引的bool value
+*/
 static int getboolfield (lua_State *L, const char *key) {
   int res;
   res = (lua_getfield(L, -1, key) == LUA_TNIL) ? -1 : lua_toboolean(L, -1);
@@ -248,6 +291,9 @@ static int getboolfield (lua_State *L, const char *key) {
 }
 
 
+/*
+获取table中的key索引的 value，d为返回默认值
+*/
 static int getfield (lua_State *L, const char *key, int d, int delta) {
   int isnum;
   int t = lua_getfield(L, -1, key);  /* get field and its type */
@@ -271,6 +317,9 @@ static int getfield (lua_State *L, const char *key, int d, int delta) {
 }
 
 
+/*
+检查并copy格式化参数conv到buff
+*/
 static const char *checkoption (lua_State *L, const char *conv,
                                 ptrdiff_t convlen, char *buff) {
   const char *option = LUA_STRFTIMEOPTIONS;
@@ -290,6 +339,9 @@ static const char *checkoption (lua_State *L, const char *conv,
 }
 
 
+/*
+检查参数是否时间戳
+*/
 static time_t l_checktime (lua_State *L, int arg) {
   l_timet t = l_gettime(L, arg);
   luaL_argcheck(L, (time_t)t == t, arg, "time out-of-bounds");
@@ -301,6 +353,13 @@ static time_t l_checktime (lua_State *L, int arg) {
 #define SIZETIMEFMT	250
 
 
+/*
+获取date数据格式
+!格式标识使用格林威治时间
+*t格式返回tm格式table
+其他则按照规则返回对应格式字符串
+strftime: c语言格式化时间函数
+*/
 static int os_date (lua_State *L) {
   size_t slen;
   const char *s = luaL_optlstring(L, 1, "%c", &slen);
@@ -343,6 +402,10 @@ static int os_date (lua_State *L) {
 }
 
 
+/*
+获取时间戳，如果传入tm参数，则返回对应时间的时间戳
+mktime: 根据tm生成时间戳的函数
+*/
 static int os_time (lua_State *L) {
   time_t t;
   if (lua_isnoneornil(L, 1))  /* called without args? */
@@ -369,6 +432,10 @@ static int os_time (lua_State *L) {
 }
 
 
+/*
+获取两个时间戳之间的秒数
+mktime: 获取时间差函数
+*/
 static int os_difftime (lua_State *L) {
   time_t t1 = l_checktime(L, 1);
   time_t t2 = l_checktime(L, 2);
@@ -379,6 +446,10 @@ static int os_difftime (lua_State *L) {
 /* }====================================================== */
 
 
+/*
+设置本地化方案
+setlocale: 设置本地化方案
+*/
 static int os_setlocale (lua_State *L) {
   static const int cat[] = {LC_ALL, LC_COLLATE, LC_CTYPE, LC_MONETARY,
                       LC_NUMERIC, LC_TIME};
@@ -391,6 +462,9 @@ static int os_setlocale (lua_State *L) {
 }
 
 
+/*
+退出进程
+*/
 static int os_exit (lua_State *L) {
   int status;
   if (lua_isboolean(L, 1))
