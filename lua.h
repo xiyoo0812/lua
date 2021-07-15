@@ -386,11 +386,24 @@ LUA_API void (lua_closeslot) (lua_State *L, int idx);
 
 #define lua_tostring(L,i)	lua_tolstring(L, (i), NULL)
 
-
+/*
+* 将栈顶元素插入到idx处
+* 旋转原理: 第三个参数1表示栈顶元素和其他元素(idx到top-1)分两组分别旋转，再统一旋转
+* 即上移操作，从插入位置开始上移1位，栈顶元素进入插入位置
+*/
 #define lua_insert(L,idx)	lua_rotate(L, (idx), 1)
 
+/*
+* 将堆栈idx处元素删除
+* 旋转原理: 第三个参数-1表示栈底元素(idx)和其他元素(idx+1到top)分两组分别旋转，再统一旋转后idx元素就到栈顶被pop掉
+* 即下移操作，从删除位置开始下移1位，删除元素到栈顶，然后pop
+*/
 #define lua_remove(L,idx)	(lua_rotate(L, (idx), -1), lua_pop(L, 1))
 
+/*
+* 替换栈顶元素和idx元素
+* 先copy栈顶元素到idx位置，再pop
+*/
 #define lua_replace(L,idx)	(lua_copy(L, -1, (idx)), lua_pop(L, 1))
 
 /* }============================================================== */

@@ -184,7 +184,10 @@ static lua_CFunction lsys_sym (lua_State *L, void *lib, const char *sym) {
 ** of LUA_EXEC_DIR with the executable's path.
 */
 /*
-将栈顶路径字符串中的LUA_EXEC_DIR占位符，替换成运行时的路径，并替换栈顶元素
+* LUA_EXEC_DIR: !，程序运行时路径的占位符。
+* strrchr: 从右查询字符串中第一次出现字符的指针。
+* GetModuleFileNameA: 获取windows程序执行路径，包含文件名，*lb = \0表示去掉文件名
+* 将栈顶路径字符串中的!占位符，替换成运行时的路径，并替换栈顶元素
 */
 static void setprogdir (lua_State *L) {
   char buff[MAX_PATH + 1];
@@ -237,7 +240,7 @@ static void *lsys_load (lua_State *L, const char *path, int seeglb) {
 
 
 /*
-win32获取一个库符号（symbol）的地址，在lua这里是获取一个函数地址
+win32获取一个动态库符号（symbol）的地址，并转换成lua的C函数。
 */
 static lua_CFunction lsys_sym (lua_State *L, void *lib, const char *sym) {
   lua_CFunction f = (lua_CFunction)(voidf)GetProcAddress((HMODULE)lib, sym);
@@ -328,10 +331,11 @@ static int noenv (lua_State *L) {
 ** Set a path
 */
 /*
-设置一个envname（LUA_PATH, LUA_CPATH）的path路径
-如果没有定义环境变量，则使用默认PATH
-如果在环境变量里面有;;，那么将默认PATH插入到;;之间
-最后将路径里面的?替换成当前执行路径
+* LUA_PATH_SEP: ;
+* 设置一个LUA_PATH, LUA_CPATH的路径
+* 如果没有定义环境变量，则使用默认PATH
+* 如果在环境变量里面有;;，那么将默认dft插入到;;之间
+* 最后将路径里面的?替换成当前执行路径
 */
 static void setpath (lua_State *L, const char *fieldname,
                                    const char *envname,
@@ -372,7 +376,8 @@ static void setpath (lua_State *L, const char *fieldname,
 ** return registry.CLIBS[path]
 */
 /*
-返回已经注册指定path的C函数库的地址
+* 所有动态库加载后，库指针存放再注册表的CLIBS表
+* 返回已经注册指定path的C函数库的地址
 */
 static void *checkclib (lua_State *L, const char *path) {
   void *plib;
@@ -389,8 +394,8 @@ static void *checkclib (lua_State *L, const char *path) {
 ** registry.CLIBS[#CLIBS + 1] = plib  -- also keep a list of all libraries
 */
 /*
-将一个C函数库注册到lua的LUA_REGISTRYINDEX表中CLIBS字段
-之所以lua_pushvalue是因为lua_rawseti需要plib在栈顶
+* 将一个C函数库注册到lua的LUA_REGISTRYINDEX表中CLIBS字段
+* 之所以lua_pushvalue是因为lua_rawseti需要plib在栈顶
 */
 static void addtoclib (lua_State *L, const char *path, void *plib) {
   lua_getfield(L, LUA_REGISTRYINDEX, CLIBS);
@@ -407,7 +412,7 @@ static void addtoclib (lua_State *L, const char *path, void *plib) {
 ** handles in list CLIBS
 */
 /*
-CLIBS库的gc函数，清空所有c函数库
+* CLIBS库的gc函数，清空所有c函数库
 */
 static int gctm (lua_State *L) {
   lua_Integer n = luaL_len(L, 1);
@@ -437,9 +442,9 @@ static int gctm (lua_State *L) {
 ** errors, return an error code and an error message in the stack.
 */
 /*
-加载C函数库（path）的符号表，*加载所有符号，否则加载指定符号（函数名）
-先checkclib，确认该库是否已经加载，没有加载则lsys_load，然后addtoclib
-成功后如果加载所有符号，返回true，否则返回指定符号地址
+* 加载C函数库（path）的符号表，*加载所有符号，否则加载指定符号（函数名）
+* 先checkclib，确认该库是否已经加载，没有加载则lsys_load，然后addtoclib
+* 成功后如果加载所有符号，返回true，否则返回指定符号地址
 */
 static int lookforfunc (lua_State *L, const char *path, const char *sym) {
   void *reg = checkclib(L, path);  /* check loaded C libraries */
@@ -463,8 +468,8 @@ static int lookforfunc (lua_State *L, const char *path, const char *sym) {
 
 
 /*
-package.loadlib实现
-lua_insert的目的是调整返回值顺序，因为在执行lookforfunc失败的时候会压入errmsg
+* package.loadlib实现
+* lua_insert的目的是调整返回值顺序，因为在执行lookforfunc失败的时候会压入errmsg
 */
 static int ll_loadlib (lua_State *L) {
   const char *path = luaL_checkstring(L, 1);
@@ -490,7 +495,7 @@ static int ll_loadlib (lua_State *L) {
 
 
 /*
-文件名是否可读（能否打开）
+* 文件名是否可读（能否打开）
 */
 static int readable (const char *filename) {
   FILE *f = fopen(filename, "r");  /* try to open file */
@@ -506,8 +511,8 @@ static int readable (const char *filename) {
 ** NULL when list ends.
 */
 /*
-在path里面查找下一个文件名，以;为分隔符
-strchr: 查找下一个chr的位置
+* 在path里面查找下一个文件名，以;为分隔符
+* strchr: 查找下一个chr的位置
 */
 static const char *getnextfilename (char **path, char *end) {
   char *sep;
@@ -534,7 +539,7 @@ static const char *getnextfilename (char **path, char *end) {
 **	no file 'blublu.so'
 */
 /*
-添加没有找到文件的错误信息到栈顶，用于load失败输出错误
+* 添加没有找到文件的错误信息到栈顶，用于load失败输出错误
 */
 static void pusherrornotfound (lua_State *L, const char *path) {
   luaL_Buffer b;
@@ -547,11 +552,11 @@ static void pusherrornotfound (lua_State *L, const char *path) {
 
 
 /*
-在路径列表（PATHS）里面搜索能够找到指定文件名的路径
-1 将name中所有的sep换成dirsep
-2 将path中所有的?换成filename
-3 遍历path中所有的文件名，看能否打开
-4 如果能够打开，则返回该文件名filename，否则返回错误信息
+* 在路径列表（PATHS）里面搜索能够找到指定文件名的路径
+* 1 将name中所有的sep（.）换成dirsep（//）
+* 2 将path中所有的?换成filename
+* 3 遍历path中所有的文件名，看能否打开
+* 4 如果能够打开，则返回该文件名filename，否则返回错误信息
 */
 static const char *searchpath (lua_State *L, const char *name,
                                              const char *path,
@@ -581,7 +586,8 @@ static const char *searchpath (lua_State *L, const char *name,
 
 
 /*
-package.searchpath实现
+* package包导出接口
+* package.searchpath实现
 */
 static int ll_searchpath (lua_State *L) {
   const char *f = searchpath(L, luaL_checkstring(L, 1),
@@ -598,7 +604,7 @@ static int ll_searchpath (lua_State *L) {
 
 
 /*
-在package包的指定field（pname）找到查找的path配置，然后在该配置下面查找指定文件名（name）
+* 在package包的指定field（pname）找到查找的path配置，然后在该配置下面查找指定文件名（name）
 */
 static const char *findfile (lua_State *L, const char *name,
                                            const char *pname,
@@ -613,7 +619,7 @@ static const char *findfile (lua_State *L, const char *name,
 
 
 /*
-检查load的结构stat，成功返回文件名，失败则返回错误信息
+* 检查load的结构stat，成功返回文件名，失败则返回错误信息
 */
 static int checkload (lua_State *L, int stat, const char *filename) {
   if (l_likely(stat)) {  /* module loaded successfully? */
@@ -627,7 +633,7 @@ static int checkload (lua_State *L, int stat, const char *filename) {
 
 
 /*
-在package.path配置的路径下搜索lua文件的实现
+* 在package.path配置的路径下搜索lua文件的实现
 */
 static int searcher_Lua (lua_State *L) {
   const char *filename;

@@ -48,13 +48,16 @@ const char lua_ident[] =
 
 /* test for pseudo index */
 /*
-判断i是否假索引
-假索引除了他对应的值不在栈中之外，其他都类似于栈中的索引。
+* 判断i是否伪索引
+* 伪索引除了他对应的值不在栈中之外，其他都类似于栈中的索引。
 */
 #define ispseudo(i)		((i) <= LUA_REGISTRYINDEX)
 
 /* test for upvalue */
-/* 判断i是否updalue索引 */
+/* 
+* 判断i是否updalue索引
+* upvalue的索引小于注册表索引，且为负数，即LUA_REGISTRYINDEX - idx
+*/
 #define isupvalue(i)		((i) < LUA_REGISTRYINDEX)
 
 
@@ -289,9 +292,10 @@ static void reverse (lua_State *L, StkId from, StkId to) {
 ** rotate x n == BA. But BA == (A^r . B^r)^r.
 */
 /*
-旋转栈上两段（t, idx）参数，以n为中心
-(t)top <-> (m)mid <-> pos
-rotate(123456, 4) = 651234
+* 旋转的定义其实就是栈上移和下移，n的符号为正表示上移，为负表示下移，n表示移动步数
+* 具体算法：反转栈上两段（t,m = m,idx）参数，以n为中心，然后再全部反转
+* (t)top <-> (m)mid <-> p(pos)
+* rotate(123456, 4) => 4321 65 => 56 1234
 */
 LUA_API void lua_rotate (lua_State *L, int idx, int n) {
   StkId p, t, m;
@@ -634,7 +638,7 @@ LUA_API const char *lua_pushlstring (lua_State *L, const char *s, size_t len) {
 
 
 /*
-压入字符串（以\0结束）到栈顶
+* 压入字符串（以\0结束）到栈顶
 */
 LUA_API const char *lua_pushstring (lua_State *L, const char *s) {
   lua_lock(L);
@@ -668,7 +672,7 @@ LUA_API const char *lua_pushvfstring (lua_State *L, const char *fmt,
 
 
 /*
-压入格式化字符串到栈顶，接收...参数
+* 压入格式化字符串到栈顶，接收...参数
 */
 LUA_API const char *lua_pushfstring (lua_State *L, const char *fmt, ...) {
   const char *ret;
