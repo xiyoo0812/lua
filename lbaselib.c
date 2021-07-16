@@ -304,6 +304,11 @@ static int luaB_ipairs (lua_State *L) {
 }
 
 
+/*
+* 加载lua文件/或者string等的辅助处理
+* 成功则把env设置到返回的函数的第一个upvalue
+* 失败返回nil，err
+*/
 static int load_aux (lua_State *L, int status, int envidx) {
   if (l_likely(status == LUA_OK)) {
     if (envidx != 0) {  /* 'env' parameter? */
@@ -321,6 +326,11 @@ static int load_aux (lua_State *L, int status, int envidx) {
 }
 
 
+/*
+* 全局函数loadfile加载lua文件的实现
+* 成功返回loadfunc
+* 失败返回nil, err
+*/
 static int luaB_loadfile (lua_State *L) {
   const char *fname = luaL_optstring(L, 1, NULL);
   const char *mode = luaL_optstring(L, 2, NULL);
@@ -368,6 +378,11 @@ static const char *generic_reader (lua_State *L, void *ud, size_t *size) {
 }
 
 
+/*
+* 全局函数load加载string的实现
+* 成功返回loadfunc
+* 失败返回nil，err
+*/
 static int luaB_load (lua_State *L) {
   int status;
   size_t l;
@@ -396,6 +411,10 @@ static int dofilecont (lua_State *L, int d1, lua_KContext d2) {
 }
 
 
+/*
+* 全局函数dofile加载文件并执行的实现
+* 成功返回nil，失败返回err
+*/
 static int luaB_dofile (lua_State *L) {
   const char *fname = luaL_optstring(L, 1, NULL);
   lua_settop(L, 1);

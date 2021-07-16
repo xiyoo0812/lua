@@ -828,6 +828,11 @@ static const char *getF (lua_State *L, void *ud, size_t *size) {
 }
 
 
+/*
+* what: 文件操作类型
+* 生成文件操作错误信息
+* 将错误信息压到传入的fnameidx位置
+*/
 static int errfile (lua_State *L, const char *what, int fnameindex) {
   const char *serr = strerror(errno);
   const char *filename = lua_tostring(L, fnameindex) + 1;
@@ -837,6 +842,9 @@ static int errfile (lua_State *L, const char *what, int fnameindex) {
 }
 
 
+/*
+* UTF-8 带BOM格式的文件跳过文件开头的BOM标记
+*/
 static int skipBOM (LoadF *lf) {
   const char *p = "\xEF\xBB\xBF";  /* UTF-8 BOM mark */
   int c;
@@ -858,6 +866,10 @@ static int skipBOM (LoadF *lf) {
 ** first "valid" character of the file (after the optional BOM and
 ** a first-line comment).
 */
+/*
+* 1、跳过UTF-8的BOM标识
+* 2、跳过首行#为首的注释
+*/
 static int skipcomment (LoadF *lf, int *cp) {
   int c = *cp = skipBOM(lf);
   if (c == '#') {  /* first line is a comment (Unix exec. file)? */
@@ -871,6 +883,14 @@ static int skipcomment (LoadF *lf, int *cp) {
 }
 
 
+/*
+* 加载lua文件实现
+* 1、文件名为空则表示从stdin读取
+* 2、先以普通r模式open，如果是二进制文件，则以rb模式reopen
+* 4、加载失败栈顶为错误信息
+* 3、加载成功栈顶为loadfunc
+* 5、返回加载状态status
+*/
 LUALIB_API int luaL_loadfilex (lua_State *L, const char *filename,
                                              const char *mode) {
   LoadF lf;
