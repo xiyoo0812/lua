@@ -386,6 +386,7 @@ union GCUnion {
 
 
 /* actual number of total bytes allocated */
+/* 计算当前已经分配的内存总字节数 */
 #define gettotalbytes(g)	cast(lu_mem, (g)->totalbytes + (g)->GCdebt)
 
 LUAI_FUNC void luaE_setdebt (global_State *g, l_mem debt);

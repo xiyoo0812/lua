@@ -50,6 +50,9 @@
 ** The equivalent, in bytes, of one unit of "work" (visiting a slot,
 ** sweeping an object, etc.)
 */
+/*
+一个工作单元（访问插槽、扫描对象）的字节数
+*/
 #define WORK2MEM	sizeof(TValue)
 
 
@@ -61,33 +64,41 @@
 
 
 /* mask with all color bits */
+/* maskcolors 等于 gary（灰色） */
 #define maskcolors	(bitmask(BLACKBIT) | WHITEBITS)
 
 /* mask with all GC bits */
+/* 默认mark值，age为111（AGEBITS），相当于没有设置age*/
 #define maskgcbits      (maskcolors | AGEBITS)
 
 
 /* macro to erase all color bits then set only the current white bit */
+/* 标记为白色，先清除age和black */
 #define makewhite(g,x)	\
   (x->marked = cast_byte((x->marked & ~maskcolors) | luaC_white(g)))
 
 /* make an object gray (neither white nor black) */
+/* 设置为灰色 */
 #define set2gray(x)	resetbits(x->marked, maskcolors)
 
 
 /* make an object black (coming from any color) */
+/* 设置为黑色 */
 #define set2black(x)  \
   (x->marked = cast_byte((x->marked & ~WHITEBITS) | bitmask(BLACKBIT)))
 
 
+/* value是否白色，可回收+white */
 #define valiswhite(x)   (iscollectable(x) && iswhite(gcvalue(x)))
 
+/* key是否白色，可回收+white */
 #define keyiswhite(n)   (keyiscollectable(n) && iswhite(gckey(n)))
 
 
 /*
 ** Protected access to objects in values
 */
+/* 获取一个可回收对象 */
 #define gcvalueN(o)     (iscollectable(o) ? gcvalue(o) : NULL)
 
 
@@ -254,6 +265,12 @@ void luaC_fix (lua_State *L, GCObject *o) {
 /*
 ** create a new collectable object (with given type and size) and link
 ** it to 'allgc' list.
+*/
+/*
+新建一个对象
+1）分配一个对象
+2）标记为白色，并设置类型
+3）添加到allgc链表的head
 */
 GCObject *luaC_newobj (lua_State *L, int tt, size_t sz) {
   global_State *g = G(L);
@@ -665,6 +682,9 @@ static lu_mem propagatemark (global_State *g) {
 }
 
 
+/*
+遍历所有的gary列表，并计算work
+*/
 static lu_mem propagateall (global_State *g) {
   lu_mem tot = 0;
   while (g->gray)
@@ -754,6 +774,9 @@ static void clearbyvalues (global_State *g, GCObject *l, GCObject *f) {
 }
 
 
+/*
+释放upvalue
+*/
 static void freeupval (lua_State *L, UpVal *uv) {
   if (upisopen(uv))
     luaF_unlinkupval(uv);
@@ -761,6 +784,9 @@ static void freeupval (lua_State *L, UpVal *uv) {
 }
 
 
+/*
+释放一个对象，根据对象类型调用对于的free函数
+*/
 static void freeobj (lua_State *L, GCObject *o) {
   switch (o->tt) {
     case LUA_VPROTO:
@@ -813,6 +839,14 @@ static void freeobj (lua_State *L, GCObject *o) {
 ** collection cycle. Return where to continue the traversal or NULL if
 ** list is finished. ('*countout' gets the number of elements traversed.)
 */
+/*
+扫描一个列表
+1）计算当前ow（非白色）和white（白色）
+2）遍历链表p中的前countin个对象
+3）如果当前对象标记死亡，释放改对象
+4）标记改对象
+5）计算标记的对象个数
+*/
 static GCObject **sweeplist (lua_State *L, GCObject **p, int countin,
                              int *countout) {
   global_State *g = G(L);
@@ -840,6 +874,11 @@ static GCObject **sweeplist (lua_State *L, GCObject **p, int countin,
 /*
 ** sweep a list until a live object (or end of list)
 */
+/*
+扫描一个列表
+1）每次从链表p里取出一个对象进行扫描
+2）对象为live或者遍历完返回该对象
+*/
 static GCObject **sweeptolive (lua_State *L, GCObject **p) {
   GCObject **old = p;
   do {
@@ -859,6 +898,12 @@ static GCObject **sweeptolive (lua_State *L, GCObject **p) {
 
 /*
 ** If possible, shrink string table.
+*/
+/*
+检查string table的尺寸
+1）不是gcemergency
+2）string table的使用量小于总量的1/4，将strt的尺寸缩小到当前的1/2
+3）回收内存，重新计算GCestimate和GCdebt
 */
 static void checkSizes (lua_State *L, global_State *g) {
   if (!g->gcemergency) {
@@ -927,6 +972,9 @@ static void GCTM (lua_State *L) {
 /*
 ** Call a few finalizers
 */
+/*
+收集少量（n个）的finalizers
+*/
 static int runafewfinalizers (lua_State *L, int n) {
   global_State *g = G(L);
   int i;
@@ -939,6 +987,9 @@ static int runafewfinalizers (lua_State *L, int n) {
 /*
 ** call all pending finalizers
 */
+/*
+收集所有的finalizers
+*/
 static void callallpendingfinalizers (lua_State *L) {
   global_State *g = G(L);
   while (g->tobefnz)
@@ -948,6 +999,9 @@ static void callallpendingfinalizers (lua_State *L) {
 
 /*
 ** find last 'next' field in list 'p' list (to add elements in its end)
+*/
+/*
+查找链表的tail元素
 */
 static GCObject **findlast (GCObject **p) {
   while (*p != NULL)
@@ -986,6 +1040,9 @@ static void separatetobefnz (global_State *g, int all) {
 /*
 ** If pointer 'p' points to 'o', move it to the next element.
 */
+/*
+如果p的head是o，p指向o的next
+*/
 static void checkpointer (GCObject **p, GCObject *o) {
   if (o == *p)
     *p = o->next;
@@ -995,6 +1052,9 @@ static void checkpointer (GCObject **p, GCObject *o) {
 /*
 ** Correct pointers to objects inside 'allgc' list when
 ** object 'o' is being removed from the list.
+*/
+/*
+调整gc的存储链表
 */
 static void correctpointers (global_State *g, GCObject *o) {
   checkpointer(&g->survival, o);
@@ -1125,6 +1185,9 @@ static GCObject **sweepgen (lua_State *L, global_State *g, GCObject **p,
 ** Traverse a list making all its elements white and clearing their
 ** age. In incremental mode, all objects are 'new' all the time,
 ** except for fixed strings (which are always old).
+*/
+/*
+将链表p全部标记为白色
 */
 static void whitelist (global_State *g, GCObject *p) {
   int white = luaC_white(g);
@@ -1290,6 +1353,10 @@ static void atomic2gen (lua_State *L, global_State *g) {
 ** are cleared. Then, turn all objects into old and finishes the
 ** collection.
 */
+/*
+进入分代GC模式
+必须持续一个原子循环确保所有对象都已正确标记，并在表中显示都被清除了，然后将所有对象变为旧对象并完成收集
+*/
 static lu_mem entergen (lua_State *L, global_State *g) {
   lu_mem numobjs;
   luaC_runtilstate(L, bitmask(GCSpause));  /* prepare to start a new cycle */
@@ -1304,6 +1371,11 @@ static lu_mem entergen (lua_State *L, global_State *g) {
 ** Enter incremental mode. Turn all objects white, make all
 ** intermediate lists point to NULL (to avoid invalid pointers),
 ** and go to the pause state.
+*/
+/*
+进入增量GC模式
+标识所有的对象为白色，清空所有的增量GC的列表
+修改类型，并设置为PAUSE状态
 */
 static void enterinc (global_State *g) {
   whitelist(g, g->allgc);
@@ -1475,6 +1547,11 @@ static void setpause (global_State *g) {
 ** not need to skip objects created between "now" and the start of the
 ** real sweep.
 */
+/*
+进入GCSswpallgc状态
+1）设置GCSswpallgc状态
+2）设置sweepgc对象
+*/
 static void entersweep (lua_State *L) {
   global_State *g = G(L);
   g->gcstate = GCSswpallgc;
@@ -1556,6 +1633,12 @@ static lu_mem atomic (lua_State *L) {
 }
 
 
+/*
+进行一次扫描
+1）判断sweepgc是否存在
+2）如果存在，则记录扫描sweepgc的work，并评估GCestimate
+3）如果不存在，则进入下一个状态，并设置sweepgc为下一条链表（如果有）的head
+*/
 static int sweepstep (lua_State *L, global_State *g,
                       int nextstate, GCObject **nextlist) {
   if (g->sweepgc) {
@@ -1573,6 +1656,17 @@ static int sweepstep (lua_State *L, global_State *g,
 }
 
 
+/*
+根据当前状态执行一次单元收集
+1）GCSpause（不可拆分），启动一轮新的回收
+2）GCSpropagate（可拆分），从gray链表中拿出头部obj，traverse该obj
+3）GCSenteratomic（不可拆分），用来确保mark已经全部完成
+4）GCSswpallgc（可拆分），扫描allgc链表
+5）GCSswpfinobj（可拆分），扫描finobj链表
+6）GCSswptobefnz（可拆分），扫描tobefnz链表
+7）GCSswpend（不可拆分），扫描完成，检查string table
+8）GCScallfin（可拆分），完成一次GC过程
+*/
 static lu_mem singlestep (lua_State *L) {
   global_State *g = G(L);
   lu_mem work;
@@ -1640,6 +1734,9 @@ static lu_mem singlestep (lua_State *L) {
 ** advances the garbage collector until it reaches a state allowed
 ** by 'statemask'
 */
+/*
+步进GC收集器直到达到指定状态
+*/
 void luaC_runtilstate (lua_State *L, int statesmask) {
   global_State *g = G(L);
   while (!testbit(statesmask, g->gcstate))
@@ -1653,6 +1750,14 @@ void luaC_runtilstate (lua_State *L, int statesmask) {
 ** running single steps until adding that many units of work or
 ** finishing a cycle (pause state). Finally, it sets the debt that
 ** controls when next step will be performed.
+*/
+/*
+增量模式单步收集
+1）计算GC的速度(stepmul)和债务单元数量(debt)
+2）计算单步需要收集的单元数量(stepsize)
+3）执行单步收集，直到收集的内存达到stepsize或者状态达到PAUSE
+4）如果状态为PAUSE，则完成一轮收集
+5）否则重新计算债务
 */
 static void incstep (lua_State *L, global_State *g) {
   int stepmul = (getgcparam(g->gcstepmul) | 1);  /* avoid division by 0 */
@@ -1675,6 +1780,11 @@ static void incstep (lua_State *L, global_State *g) {
 /*
 ** performs a basic GC step if collector is running
 */
+/*
+执行一次基础的GC步骤
+1）判断收集器是否在运行
+2）根据GC模式进行一次单步GC
+*/
 void luaC_step (lua_State *L) {
   global_State *g = G(L);
   lua_assert(!g->gcemergency);
@@ -1694,6 +1804,13 @@ void luaC_step (lua_State *L) {
 ** to sweep all objects to turn them back to white (as white has not
 ** changed, nothing will be collected).
 */
+/*
+执行一次增量模式的全量GC
+1）如果不在扫描状态，则执行扫描
+2）先等待收集器恢复PAUSE
+3）执行一次全量收集，等待状态变成FIN状态
+2）等待收集器恢复PAUSE
+*/
 static void fullinc (lua_State *L, global_State *g) {
   if (keepinvariant(g))  /* black objects? */
     entersweep(L); /* sweep everything to turn them back to white */
@@ -1711,6 +1828,12 @@ static void fullinc (lua_State *L, global_State *g) {
 ** Performs a full GC cycle; if 'isemergency', set a flag to avoid
 ** some operations which could change the interpreter state in some
 ** unexpected ways (running finalizers and shrinking some structures).
+*/
+/*
+进行一次全量GC
+1）设置是否紧急GC的标识
+2）根据GC模式进行一次全量GC
+3）清除紧急GC标识
 */
 void luaC_fullgc (lua_State *L, int isemergency) {
   global_State *g = G(L);

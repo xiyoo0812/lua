@@ -51,6 +51,10 @@
 ** all objects are white again.
 */
 
+/*
+检查在什么GC状态主不变量是稳定的（白色对象不能指向黑色对象）
+在扫描过程中，可能会破坏稳定状态
+*/
 #define keepinvariant(g)	((g)->gcstate <= GCSatomic)
 
 
@@ -72,6 +76,7 @@
 ** used for object "age" in generational mode. Last bit is used
 ** by tests.
 */
+/* 前3bit（0-7）用来存储age */
 #define WHITE0BIT	3  /* object is white (type 0) */
 #define WHITE1BIT	4  /* object is white (type 1) */
 #define BLACKBIT	5  /* object is black */
@@ -84,6 +89,12 @@
 #define WHITEBITS	bit2mask(WHITE0BIT, WHITE1BIT)
 
 
+/*
+1）iswhite: 判断x是white
+2）isblack: 判断x是black
+3）isgray: 判断x是gray（black + white）
+4）tofinalize: 判断x是finalize
+*/
 #define iswhite(x)      testbits((x)->marked, WHITEBITS)
 #define isblack(x)      testbit((x)->marked, BLACKBIT)
 #define isgray(x)  /* neither white nor black */  \
@@ -91,6 +102,14 @@
 
 #define tofinalize(x)	testbit((x)->marked, FINALIZEDBIT)
 
+/*
+1）otherwhite: 翻转currentwhite的white bit(3/4)
+2）isdeadm: 与otherwhite相同，与currentwhite相反，上一轮的对象，需要被释放
+3）isdead: 判断对象v是否死亡
+4）changewhite: 清除掉white bit
+5）nw2black: mark添加black bit
+6）luaC_white: 返回currentwhite
+*/
 #define otherwhite(g)	((g)->currentwhite ^ WHITEBITS)
 #define isdeadm(ow,m)	((m) & (ow))
 #define isdead(g,v)	isdeadm(otherwhite(g), (v)->marked)
@@ -113,6 +132,12 @@
 
 #define AGEBITS		7  /* all age bits (111) */
 
+/*
+1）getage: 返回对象o的age
+2）setage: 设置对象o的age
+3）isold: 对象o的age大于存活都是OLD
+4）changeage: 改变对象o的age
+*/
 #define getage(o)	((o)->marked & AGEBITS)
 #define setage(o,a)  ((o)->marked = cast_byte(((o)->marked & (~AGEBITS)) | a))
 #define isold(o)	(getage(o) > G_SURVIVAL)
@@ -132,12 +157,16 @@
 ** some gc parameters are stored divided by 4 to allow a maximum value
 ** up to 1023 in a 'lu_byte'.
 */
+/*
+gc参数转换，允许某些参数达到1023，但能存储到一个byte内
+*/
 #define getgcparam(p)	((p) * 4)
 #define setgcparam(p,v)	((p) = (v) / 4)
 
 #define LUAI_GCMUL      100
 
 /* how much to allocate before next GC step (log2) */
+/* lua单步gc收集的字节数 */
 #define LUAI_GCSTEPSIZE 13      /* 8 KB */
 
 
@@ -145,6 +174,10 @@
 ** Check whether the declared GC mode is generational. While in
 ** generational mode, the collector can go temporarily to incremental
 ** mode to improve performance. This is signaled by 'g->lastatomic != 0'.
+*/
+/*
+是否声明了分代GC模式
+分代GC模式可以临时转换到增量模式以提升性能，因此lastatomic不等于0也表示分代
 */
 #define isdecGCmodegen(g)	(g->gckind == KGC_GEN || g->lastatomic != 0)
 
@@ -154,11 +187,17 @@
 ** 'condchangemem' is used only for heavy tests (forcing a full
 ** GC cycle on every opportunity)
 */
+/*
+检查是否可以进行GC
+1）GCdebt必须大于0
+2）此函数由内部触发
+*/
 #define luaC_condGC(L,pre,pos) \
 	{ if (G(L)->GCdebt > 0) { pre; luaC_step(L); pos;}; \
 	  condchangemem(L,pre,pos); }
 
 /* more often than not, 'pre'/'pos' are empty */
+/* 检查是否可以进行GC */
 #define luaC_checkGC(L)		luaC_condGC(L,(void)0,(void)0)
 
 
