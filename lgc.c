@@ -50,9 +50,7 @@
 ** The equivalent, in bytes, of one unit of "work" (visiting a slot,
 ** sweeping an object, etc.)
 */
-/*
-Ò»¸ö¹¤×÷µ¥Ôª£¨·ÃÎÊ²å²Û¡¢É¨Ãè¶ÔÏó£©µÄ×Ö½ÚÊı
-*/
+/* ä¸€ä¸ªå·¥ä½œå•å…ƒï¼ˆè®¿é—®æ’æ§½ã€æ‰«æå¯¹è±¡ï¼‰çš„å­—èŠ‚æ•° */
 #define WORK2MEM	sizeof(TValue)
 
 
@@ -64,59 +62,59 @@
 
 
 /* mask with all color bits */
-/* maskcolors µÈÓÚ gary£¨»ÒÉ«£© */
+/* maskcolors ç­‰äº garyï¼ˆç°è‰²ï¼‰ */
 #define maskcolors	(bitmask(BLACKBIT) | WHITEBITS)
 
 /* mask with all GC bits */
-/* Ä¬ÈÏmarkÖµ£¬ageÎª111£¨AGEBITS£©£¬Ïàµ±ÓÚÃ»ÓĞÉèÖÃage*/
+/* é»˜è®¤markå€¼ï¼Œageä¸º111ï¼ˆAGEBITSï¼‰ï¼Œç›¸å½“äºæ²¡æœ‰è®¾ç½®age*/
 #define maskgcbits      (maskcolors | AGEBITS)
 
 
 /* macro to erase all color bits then set only the current white bit */
-/* ±ê¼ÇÎª°×É«£¬ÏÈÇå³ıageºÍblack */
+/* æ ‡è®°ä¸ºç™½è‰²ï¼Œå…ˆæ¸…é™¤ageå’Œblack */
 #define makewhite(g,x)	\
   (x->marked = cast_byte((x->marked & ~maskcolors) | luaC_white(g)))
 
 /* make an object gray (neither white nor black) */
-/* ÉèÖÃÎª»ÒÉ« */
+/* è®¾ç½®ä¸ºç°è‰² */
 #define set2gray(x)	resetbits(x->marked, maskcolors)
 
 
 /* make an object black (coming from any color) */
-/* ÉèÖÃÎªºÚÉ« */
+/* è®¾ç½®ä¸ºé»‘è‰² */
 #define set2black(x)  \
   (x->marked = cast_byte((x->marked & ~WHITEBITS) | bitmask(BLACKBIT)))
 
 
-/* valueÊÇ·ñ°×É«£¬¿É»ØÊÕ+white */
+/* valueæ˜¯å¦ç™½è‰²ï¼Œå¯å›æ”¶+white */
 #define valiswhite(x)   (iscollectable(x) && iswhite(gcvalue(x)))
 
-/* keyÊÇ·ñ°×É«£¬¿É»ØÊÕ+white */
+/* keyæ˜¯å¦ç™½è‰²ï¼Œå¯å›æ”¶+white */
 #define keyiswhite(n)   (keyiscollectable(n) && iswhite(gckey(n)))
 
 
 /*
 ** Protected access to objects in values
 */
-/* »ñÈ¡Ò»¸ö¿É»ØÊÕ¶ÔÏó */
+/* è·å–ä¸€ä¸ªå¯å›æ”¶å¯¹è±¡ */
 #define gcvalueN(o)     (iscollectable(o) ? gcvalue(o) : NULL)
 
 
-/* markvalue£º±ê¼ÇÒ»¸öÖµ */
+/* markvalueï¼šæ ‡è®°ä¸€ä¸ªå€¼ */
 #define markvalue(g,o) { checkliveness(g->mainthread,o); \
   if (valiswhite(o)) reallymarkobject(g,gcvalue(o)); }
 
-/* markkey£º±ê¼ÇÒ»¸ökeyÖµ */
+/* markkeyï¼šæ ‡è®°ä¸€ä¸ªkeyå€¼ */
 #define markkey(g, n)	{ if keyiswhite(n) reallymarkobject(g,gckey(n)); }
 
-/* markobject£º±ê¼ÇÒ»¸öobject */
+/* markobjectï¼šæ ‡è®°ä¸€ä¸ªobject */
 #define markobject(g,t)	{ if (iswhite(t)) reallymarkobject(g, obj2gco(t)); }
 
 /*
 ** mark an object that can be NULL (either because it is really optional,
 ** or it was stripped as debug info, or inside an uncompleted structure)
 */
-/* markobjectN£º±ê¼ÇÒ»¸öobject,¿ÉÒÔÎªNULL */
+/* markobjectNï¼šæ ‡è®°ä¸€ä¸ªobject,å¯ä»¥ä¸ºNULL */
 #define markobjectN(g,t)	{ if (t) markobject(g,t); }
 
 static void reallymarkobject (global_State *g, GCObject *o);
@@ -134,15 +132,11 @@ static void entersweep (lua_State *L);
 /*
 ** one after last element in a hash array
 */
-/*
-»ñÈ¡Ò»¸öhashÊı×éµÄarrayµÄ×îºóÒ»¸öÖµ£¬Í¨¹ıÊı×éµÄ³¤¶È×ª»»
-*/
+// è·å–ä¸€ä¸ªhashæ•°ç»„çš„arrayçš„æœ€åä¸€ä¸ªå€¼ï¼Œé€šè¿‡æ•°ç»„çš„é•¿åº¦è½¬æ¢
 #define gnodelast(h)	gnode(h, cast_sizet(sizenode(h)))
 
 
-/*
-»ñÈ¡Ò»¸öÎ´ÖªÀàĞÍgc¶ÔÏó¹ÜÀíµÄgclist
-*/
+// æ ¹æ®ç±»å‹è·å–ä¸€gcå¯¹è±¡ç®¡ç†çš„gclist
 static GCObject **getgclist (GCObject *o) {
   switch (o->tt) {
     case LUA_VTABLE: return &gco2t(o)->gclist;
@@ -164,13 +158,13 @@ static GCObject **getgclist (GCObject *o) {
 ** Link a collectable object 'o' with a known type into the list 'p'.
 ** (Must be a macro to access the 'gclist' field in different types.)
 */
-/* Á´½ÓÒ»¸ö¿É±»ÊÕ¼¯µÄ¶ÔÏóµ½Á´±íp£¬o±ØĞëÄÜ·ÃÎÊgclist */
+/* é“¾æ¥ä¸€ä¸ªå¯è¢«æ”¶é›†çš„å¯¹è±¡åˆ°é“¾è¡¨pï¼Œoå¿…é¡»èƒ½è®¿é—®gclist */
 #define linkgclist(o,p)	linkgclist_(obj2gco(o), &(o)->gclist, &(p))
 
 /*
-½«Ò»¸ö¶ÔÏó£¨²»ÊÇ»ÒÉ«£©Á´½Óµ½Á´±ílist£¬²¢ÖÃÎª»ÒÉ«
-1£©o->gclist = p; p = o;
-2£©ÖÃÎª»ÒÉ«
+å°†ä¸€ä¸ªå¯¹è±¡ï¼ˆä¸æ˜¯ç°è‰²ï¼‰é“¾æ¥åˆ°é“¾è¡¨listï¼Œå¹¶ç½®ä¸ºç°è‰²
+1ï¼‰o->gclist = p; p = o;
+2ï¼‰ç½®ä¸ºç°è‰²
 */
 static void linkgclist_ (GCObject *o, GCObject **pnext, GCObject **list) {
   lua_assert(!isgray(o));  /* cannot be in a gray list */
@@ -184,9 +178,9 @@ static void linkgclist_ (GCObject *o, GCObject **pnext, GCObject **list) {
 ** Link a generic collectable object 'o' into the list 'p'.
 */
 /* 
-Á´½ÓÒ»¸ö¿É±»ÊÕ¼¯µÄ¶ÔÏóµ½Á´±íp£¬o²»ÄÜÖ±½Ó·ÃÎÊgclist
-1£©µ÷ÓÃgetgclistº¯Êı£¬»ñÈ¡gclist
-2£©µ÷ÓÃlinkgclist_
+é“¾æ¥ä¸€ä¸ªå¯è¢«æ”¶é›†çš„å¯¹è±¡åˆ°é“¾è¡¨pï¼Œoä¸èƒ½ç›´æ¥è®¿é—®gclist
+1ï¼‰è°ƒç”¨getgclistå‡½æ•°ï¼Œè·å–gclist
+2ï¼‰è°ƒç”¨linkgclist_
 */
 #define linkobjgclist(o,p) linkgclist_(obj2gco(o), getgclist(o), &(p))
 
@@ -201,9 +195,9 @@ static void linkgclist_ (GCObject *o, GCObject **pnext, GCObject **list) {
 ** logically empty.
 */
 /*
-Çå³ıÒ»¸ökey£¬·ÀÖ¹ÖĞ¶Ï±í±éÀú
-1£©ÅĞ¶Ïkey¿ÉÒÔ±»»ØÊÕ
-2£©ÉèÖÃÎªdeadkey
+æ¸…é™¤ä¸€ä¸ªkeyï¼Œé˜²æ­¢ä¸­æ–­è¡¨éå†
+1ï¼‰åˆ¤æ–­keyå¯ä»¥è¢«å›æ”¶
+2ï¼‰è®¾ç½®ä¸ºdeadkey
 */
 static void clearkey (Node *n) {
   lua_assert(isempty(gval(n)));
@@ -220,8 +214,8 @@ static void clearkey (Node *n) {
 ** being finalized, keep them in keys, but not in values
 */
 /*
-ÅĞ¶ÏÈõ±íÖĞÒ»¸ökey»òÕßvalueÊÇ·ñ¿ÉÒÔ±»Çå³ı
-×Ö·û´®ÊÇ´æÔÚ×Ö·û´®±í£¬ÓÀÔ¶²»ÊÇÈõÒıÓÃ
+åˆ¤æ–­å¼±è¡¨ä¸­ä¸€ä¸ªkeyæˆ–è€…valueæ˜¯å¦å¯ä»¥è¢«æ¸…é™¤
+å­—ç¬¦ä¸²æ˜¯å­˜åœ¨å­—ç¬¦ä¸²è¡¨ï¼Œæ°¸è¿œä¸æ˜¯å¼±å¼•ç”¨
 */
 static int iscleared (global_State *g, const GCObject *o) {
   if (o == NULL) return 0;  /* non-collectable value */
@@ -246,6 +240,14 @@ static int iscleared (global_State *g, const GCObject *o) {
 ** be done is generational mode, as its sweep does not distinguish
 ** whites from deads.)
 */
+/*
+å°†æ”¶é›†å™¨å‘å‰ç§»åŠ¨çš„å±éšœ
+åœ¨ä»£é™…æ¨¡å¼ä¸­ï¼Œå¦‚æœoå˜è€äº†ï¼Œvä¹Ÿå¿…é¡»å˜è€ï¼Œå¦‚æœoå˜è€äº†,ä½†æ˜¯ï¼Œå®ƒä¸èƒ½ç›´æ¥æ›´æ”¹ä¸ºæ—§å¯¹è±¡ï¼Œå› ä¸ºå®ƒå¯èƒ½ä»ç„¶æŒ‡å‘éæ—§å¯¹è±¡ã€‚
+å› æ­¤ï¼Œå®ƒè¢«æ ‡è®°ä¸ºOLD0ã€‚åœ¨ä¸‹ä¸€ä¸ªå¾ªç¯ä¸­ï¼Œå®ƒå°†å˜è€1ï¼Œåœ¨ä¸‹ä¸€ä¸ªå¾ªç¯ä¸­ï¼Œå®ƒå°†æœ€ç»ˆå˜è€ï¼ˆå¸¸è§„æ—§ï¼‰ã€‚åˆ°é‚£æ—¶ï¼Œå®ƒæŒ‡å‘çš„ä»»ä½•å¯¹è±¡éƒ½å°†æ˜¯æ—§çš„ã€‚
+å¦‚æœåœ¨å¢é‡æ¨¡å¼æ‰«æé˜¶æ®µè°ƒç”¨ï¼Œå®ƒä¼šå°†é»‘è‰²å¯¹è±¡æ¸…é™¤ä¸ºç™½è‰²ï¼ˆæ‰«æï¼‰ï¼Œä»¥é¿å…å¯¹åŒä¸€å¯¹è±¡è°ƒç”¨å…¶ä»–å±éšœ
+1ï¼‰åœ¨ç¨³å®šé˜¶æ®µï¼Œé‡æ–°æ ‡è®°ç™½è‰²å¯¹è±¡ï¼Œå¹¶å°†å…¶ageè®¾ç½®ä¸ºold0
+2ï¼‰åœ¨å¢é‡æ¨¡å¼æ‰«æé˜¶æ®µï¼Œç›´æ¥å°†é»‘è‰²å˜æˆç™½è‰²ï¼Œé‡æ–°æ‰«æ
+*/
 void luaC_barrier_ (lua_State *L, GCObject *o, GCObject *v) {
   global_State *g = G(L);
   lua_assert(isblack(o) && iswhite(v) && !isdead(g, v) && !isdead(g, o));
@@ -268,6 +270,12 @@ void luaC_barrier_ (lua_State *L, GCObject *o, GCObject *v) {
 ** barrier that moves collector backward, that is, mark the black object
 ** pointing to a white object as gray again.
 */
+/*
+å°†æ”¶é›†å™¨å‘åç§»åŠ¨çš„å±éšœï¼Œå³å°†æŒ‡å‘ç™½è‰²å¯¹è±¡çš„é»‘è‰²å¯¹è±¡å†æ¬¡æ ‡è®°ä¸ºç°è‰²ã€‚
+1ï¼‰å¦‚æœå¯¹è±¡çš„ageæ˜¯touch2ï¼Œæ ‡è¯†å·²ç»åœ¨grayä¸­ï¼Œåˆ™å°†è¯¥å¯¹è±¡æ ‡è®°ä¸ºgray
+2ï¼‰å¦åˆ™åŠ åˆ°grayagain
+3ï¼‰å¦‚æœæ˜¯åˆ†ä»£æ¨¡å¼ï¼Œå¹¶ä¸”å·²ç»oldäº†ï¼Œåˆ™ä¿®æ”¹ä¸ºå½“touch1
+*/
 void luaC_barrierback_ (lua_State *L, GCObject *o) {
   global_State *g = G(L);
   lua_assert(isblack(o) && !isdead(g, o));
@@ -281,6 +289,13 @@ void luaC_barrierback_ (lua_State *L, GCObject *o) {
 }
 
 
+/*
+æ ‡è®°æŸäº›å¯¹è±¡ï¼Œå¹¶è®¾ç½®ä¸ºoldï¼Œç”¨äºå­˜å‚¨ä¸€äº›æ°¸ä¸é‡Šæ”¾çš„å¯¹è±¡
+1ï¼‰å¿…é¡»åœ¨åˆšåˆ›å»ºæ—¶è°ƒç”¨
+2ï¼‰è®¾ç½®grayå¹¶è®¾ç½®ä¸ºOLD
+3ï¼‰ä»allgcä¸­ç§»é™¤
+4ï¼‰åŠ å…¥åˆ°fixedgc
+*/
 void luaC_fix (lua_State *L, GCObject *o) {
   global_State *g = G(L);
   lua_assert(g->allgc == o);  /* object must be 1st in 'allgc' list! */
@@ -297,10 +312,10 @@ void luaC_fix (lua_State *L, GCObject *o) {
 ** it to 'allgc' list.
 */
 /*
-ĞÂ½¨Ò»¸ö¶ÔÏó
-1£©·ÖÅäÒ»¸ö¶ÔÏó
-2£©±ê¼ÇÎª°×É«£¬²¢ÉèÖÃÀàĞÍ
-3£©Ìí¼Óµ½allgcÁ´±íµÄhead
+æ–°å»ºä¸€ä¸ªå¯¹è±¡
+1ï¼‰åˆ†é…ä¸€ä¸ªå¯¹è±¡
+2ï¼‰æ ‡è®°ä¸ºç™½è‰²ï¼Œå¹¶è®¾ç½®ç±»å‹
+3ï¼‰æ·»åŠ åˆ°allgcé“¾è¡¨çš„head
 */
 GCObject *luaC_newobj (lua_State *L, int tt, size_t sz) {
   global_State *g = G(L);
@@ -335,7 +350,7 @@ GCObject *luaC_newobj (lua_State *L, int tt, size_t sz) {
 ** for at most two levels: An upvalue cannot refer to another upvalue
 ** (only closures can), and a userdata's metatable must be a table.
 */
-/* ±ê¼ÇÒ»¸ö¶ÔÏó */
+/* æ ‡è®°ä¸€ä¸ªå¯¹è±¡ */
 static void reallymarkobject (global_State *g, GCObject *o) {
   switch (o->tt) {
     case LUA_VSHRSTR:
@@ -374,7 +389,7 @@ static void reallymarkobject (global_State *g, GCObject *o) {
 /*
 ** mark metamethods for basic types
 */
-/* ±ê¼Ç»ù±¾ÀàĞÍµÄÔª±í */
+/* æ ‡è®°åŸºæœ¬ç±»å‹çš„å…ƒè¡¨ */
 static void markmt (global_State *g) {
   int i;
   for (i=0; i < LUA_NUMTAGS; i++)
@@ -385,7 +400,7 @@ static void markmt (global_State *g) {
 /*
 ** mark all objects in list of being-finalized
 */
-/* ±ê¼Ç¼´½«±»ÖÕÖ¹µÄËùÓĞ¶ÔÏó */
+/* æ ‡è®°å³å°†è¢«ç»ˆæ­¢çš„æ‰€æœ‰å¯¹è±¡ */
 static lu_mem markbeingfnz (global_State *g) {
   GCObject *o;
   lu_mem count = 0;
@@ -407,6 +422,14 @@ static lu_mem markbeingfnz (global_State *g) {
 ** the list, as it was already visited. Removes also threads with no
 ** upvalues, as they have nothing to be checked. (If the thread gets an
 ** upvalue later, it will be linked in the list again.)
+*/
+/*
+é‡æ–°æ ‡è®°upvalues
+1ï¼‰éå†æ‰€æœ‰çš„æ”¸twupsä¸­çš„thread
+2ï¼‰å¦‚æœthreadæ²¡æœ‰è¢«æ ‡è®°æˆ–è€…æ²¡æœ‰upvalues
+3ï¼‰å°†threadä»twupsåˆ é™¤
+4ï¼‰éå†threadçš„æ‰€æœ‰upvalue
+5ï¼‰å¦‚æœupvalueè¢«æ ‡è®°äº†ï¼Œåˆ™æ ‡è®°upvalueçš„å€¼
 */
 static int remarkupvals (global_State *g) {
   lua_State *thread;
@@ -435,9 +458,7 @@ static int remarkupvals (global_State *g) {
 }
 
 
-/*
-Çå¿Õ»ÒÉ«ÁĞ±ígraylist
-*/
+// æ¸…ç©ºç°è‰²åˆ—è¡¨graylist
 static void cleargraylists (global_State *g) {
   g->gray = g->grayagain = NULL;
   g->weak = g->allweak = g->ephemeron = NULL;
@@ -448,12 +469,12 @@ static void cleargraylists (global_State *g) {
 ** mark root set and reset all gray lists, to start a new collection
 */
 /*
-ÖØÆôÒ»´ÎÊÕ¼¯
-1£©ÏÈ°ÑgraylistÇå¿Õ
-2£©¿ªÊ¼´Ó¸ú½Úµã±ê¼Ç¶ÔÏó
-3£©±ê¼Ç×¢²á±íµÄ¶ÔÏó
-4£©±ê¼Ç»ù´¡ÀàĞÍµÄÔª±í
-5£©±ê¼Ç¼´½«ÖÕÖ¹µÄ¶ÔÏó
+é‡å¯ä¸€æ¬¡æ”¶é›†
+1ï¼‰å…ˆæŠŠgraylistæ¸…ç©º
+2ï¼‰å¼€å§‹ä»è·ŸèŠ‚ç‚¹æ ‡è®°å¯¹è±¡
+3ï¼‰æ ‡è®°æ³¨å†Œè¡¨çš„å¯¹è±¡
+4ï¼‰æ ‡è®°åŸºç¡€ç±»å‹çš„å…ƒè¡¨
+5ï¼‰æ ‡è®°å³å°†ç»ˆæ­¢çš„å¯¹è±¡
 */
 static void restartcollection (global_State *g) {
   cleargraylists(g);
@@ -483,9 +504,9 @@ static void restartcollection (global_State *g) {
 ** 'correctgraylist' does when it finds a TOUCHED2 object.)
 */
 /*
-·Ö´úÊÕ¼¯´¦Àí¶ÔÏóage
-1£©Èç¹ûÊÇ±¾´ÎÑ­»·É¨Ãèµ½ÁË£¬ÔòÖØĞÂ¼ÓÈëµ½garylist
-2£©Èç¹ûÊÇÉÏ´ÎÑ­»·É¨Ãèµ½ÁË£¬ÔòÊÇ±ê¼ÇageÎªOLD
+åˆ†ä»£æ”¶é›†å¤„ç†å¯¹è±¡age
+1ï¼‰å¦‚æœæ˜¯æœ¬æ¬¡å¾ªç¯æ‰«æåˆ°äº†ï¼Œåˆ™é‡æ–°åŠ å…¥åˆ°garylist
+2ï¼‰å¦‚æœæ˜¯ä¸Šæ¬¡å¾ªç¯æ‰«æåˆ°äº†ï¼Œåˆ™æ˜¯æ ‡è®°ageä¸ºOLD
 */
 static void genlink (global_State *g, GCObject *o) {
   lua_assert(isblack(o));
@@ -504,12 +525,12 @@ static void genlink (global_State *g, GCObject *o) {
 ** put it in 'weak' list, to be cleared.
 */
 /*
-±éÀúÒ»¸öÈõvalueµÄ±í²¢½«ÆäÁ´½Óµ½ÊÊµ±µÄÁĞ±í¡£
-1£©»ñÈ¡±íµÄ×îºóÒ»¸öhashÔªËØlimit£¬ÒÔ¼°¼ì²éÊÇ·ñÊÇ´¿hash±í£¬ÓÃhasclears±ê¼Ç
-2£©±éÀú±íµÄhash²¿·Ö£¬Èç¹ûÖµÎª¿Õ£¬ÔòÉèÖÃkeyÎªdeadkey
-3£©Èç¹û²»Îª¿Õ£¬ÕâÏÈ±ê¼Çkey£¬È»ºóÈç¹ûÊÇ´¿hash±í£¬²¢ÇÒvalueÊÇ°×É«£¬ÔòÉèÖÃhasclears±ê¼ÇÎ»
-4£©Èç¹ûÔÚatomic½×¶Î£¬²¢ÇÒhasclears±ê¼Ç´æÔÚ£¬Ôò½«´Ë±í·ÅÈëweakÁ´±í£¬×¼±¸Çå³ı
-5£©ÔÚÆäËû½×¶Î£¬Ôò·ÅÈëgrayagain£¬ÒÔ±ãÔÚatomic½×¶ÎÔÙ´ÎÉ¨Ãè
+éå†ä¸€ä¸ªå¼±valueçš„è¡¨å¹¶å°†å…¶é“¾æ¥åˆ°é€‚å½“çš„åˆ—è¡¨ã€‚
+1ï¼‰è·å–è¡¨çš„æœ€åä¸€ä¸ªhashå…ƒç´ limitï¼Œä»¥åŠæ£€æŸ¥æ˜¯å¦æ˜¯çº¯hashè¡¨ï¼Œç”¨hasclearsæ ‡è®°
+2ï¼‰éå†è¡¨çš„hashéƒ¨åˆ†ï¼Œå¦‚æœå€¼ä¸ºç©ºï¼Œåˆ™è®¾ç½®keyä¸ºdeadkey
+3ï¼‰å¦‚æœä¸ä¸ºç©ºï¼Œè¿™å…ˆæ ‡è®°keyï¼Œç„¶åå¦‚æœæ˜¯çº¯hashè¡¨ï¼Œå¹¶ä¸”valueæ˜¯ç™½è‰²ï¼Œåˆ™è®¾ç½®hasclearsæ ‡è®°ä½
+4ï¼‰å¦‚æœåœ¨atomicé˜¶æ®µï¼Œå¹¶ä¸”hasclearsæ ‡è®°å­˜åœ¨ï¼Œåˆ™å°†æ­¤è¡¨æ”¾å…¥weaké“¾è¡¨ï¼Œå‡†å¤‡æ¸…é™¤
+5ï¼‰åœ¨å…¶ä»–é˜¶æ®µï¼Œåˆ™æ”¾å…¥grayagainï¼Œä»¥ä¾¿åœ¨atomicé˜¶æ®µå†æ¬¡æ‰«æ
 */
 static void traverseweakvalue (global_State *g, Table *h) {
   Node *n, *limit = gnodelast(h);
@@ -546,17 +567,17 @@ static void traverseweakvalue (global_State *g, Table *h) {
 ** by 'genlink'.
 */
 /*
-±éÀúÒ»¸öÈõkeyµÄ±í²¢½«ÆäÁ´½Óµ½ÊÊµ±µÄÁĞ±í¡£
-1£©ÏÈ¼ÆËãÊı×é²¿·ÖºÍhash²¿·ÖµÄ³¤¶È
-2£©±éÀúÊı×é²¿·Ö£¬Èç¹û´æÔÚ°×É«ÔªËØ£¬±ê¼Ç¸ÃÔªËØ£¬²¢ÉèÖÃmark±ê¼Ç
-3£©±éÀúhash²¿·Ö£¬inv±íÊ¾µ¹Ğò±éÀú
-4£©Èç¹ûkeyÎªnil£¬ÉèÖÃkeyÎªdeadkey
-5£©Èç¹ûkeyÊÇ°×É«£¬ÉèÖÃhasclears±ê¼Ç£¬Èç¹ûÖµÒ²ÊÇ°×É«ÉèÖÃhasww±ê¼Ç
-6£©Èç¹ûÖµÊÇ°×É«£¬±ê¼Ç¸Ã¶ÔÏó£¬²¢ÉèÖÃmark±ê¼Ç
-7£©Èç¹ûÔÚ´«²¥½×¶Î£¬±íh·ÅÈëgaryagain
-8£©Èç¹û´æÔÚ°×-°×¼üÖµ¶Ô£¬±íh·ÅÈëephemeron
-9£©Èç¹ûÓĞhasclears±ê¼Ç£¬±íh·ÅÈëallweak
-10£©µ÷ÓÃgenlink£¬ÅĞ¶Ï±íhµÄAge¾ö¶¨ÊÇ·ñÔÙÉ¨ÃèËü
+éå†ä¸€ä¸ªå¼±keyçš„è¡¨å¹¶å°†å…¶é“¾æ¥åˆ°é€‚å½“çš„åˆ—è¡¨ã€‚
+1ï¼‰å…ˆè®¡ç®—æ•°ç»„éƒ¨åˆ†å’Œhashéƒ¨åˆ†çš„é•¿åº¦
+2ï¼‰éå†æ•°ç»„éƒ¨åˆ†ï¼Œå¦‚æœå­˜åœ¨ç™½è‰²å…ƒç´ ï¼Œæ ‡è®°è¯¥å…ƒç´ ï¼Œå¹¶è®¾ç½®markæ ‡è®°
+3ï¼‰éå†hashéƒ¨åˆ†ï¼Œinvè¡¨ç¤ºå€’åºéå†
+4ï¼‰å¦‚æœkeyä¸ºnilï¼Œè®¾ç½®keyä¸ºdeadkey
+5ï¼‰å¦‚æœkeyæ˜¯ç™½è‰²ï¼Œè®¾ç½®hasclearsæ ‡è®°ï¼Œå¦‚æœå€¼ä¹Ÿæ˜¯ç™½è‰²è®¾ç½®haswwæ ‡è®°
+6ï¼‰å¦‚æœå€¼æ˜¯ç™½è‰²ï¼Œæ ‡è®°è¯¥å¯¹è±¡ï¼Œå¹¶è®¾ç½®markæ ‡è®°
+7ï¼‰å¦‚æœåœ¨ä¼ æ’­é˜¶æ®µï¼Œè¡¨hæ”¾å…¥garyagain
+8ï¼‰å¦‚æœå­˜åœ¨ç™½-ç™½é”®å€¼å¯¹ï¼Œè¡¨hæ”¾å…¥ephemeron
+9ï¼‰å¦‚æœæœ‰hasclearsæ ‡è®°ï¼Œè¡¨hæ”¾å…¥allweak
+10ï¼‰è°ƒç”¨genlinkï¼Œåˆ¤æ–­è¡¨hçš„Ageå†³å®šæ˜¯å¦å†æ‰«æå®ƒ
 */
 static int traverseephemeron (global_State *g, Table *h, int inv) {
   int marked = 0;  /* true if an object is marked in this traversal */
@@ -602,12 +623,12 @@ static int traverseephemeron (global_State *g, Table *h, int inv) {
 
 
 /*
-±éÀúÒ»¸öÇ¿±í²¢½«ÆäÁ´½Óµ½ÊÊµ±µÄÁĞ±í¡£
-1£©¼ÆËãÊı×é²¿·ÖµÄ³¤¶È£¬ÒÔ¼°×îºóÒ»¸öhashÔªËØ
-2£©±éÀúÊı×é²¿·Ö£¬²¢±ê¼ÇËùÓĞÔªËØ
-3£©±éÀúhash²¿·Ö£¬Èç¹ûkeyÎªnil£¬ÉèÖÃkeyÎªdeadkey
-4£©Èç¹ûkey²»Îªnil£¬±ê¼ÇkeyºÍvalue
-5£©µ÷ÓÃgenlink£¬ÅĞ¶Ï±íhµÄAge¾ö¶¨ÊÇ·ñÔÙÉ¨ÃèËü
+éå†ä¸€ä¸ªå¼ºè¡¨å¹¶å°†å…¶é“¾æ¥åˆ°é€‚å½“çš„åˆ—è¡¨ã€‚
+1ï¼‰è®¡ç®—æ•°ç»„éƒ¨åˆ†çš„é•¿åº¦ï¼Œä»¥åŠæœ€åä¸€ä¸ªhashå…ƒç´ 
+2ï¼‰éå†æ•°ç»„éƒ¨åˆ†ï¼Œå¹¶æ ‡è®°æ‰€æœ‰å…ƒç´ 
+3ï¼‰éå†hashéƒ¨åˆ†ï¼Œå¦‚æœkeyä¸ºnilï¼Œè®¾ç½®keyä¸ºdeadkey
+4ï¼‰å¦‚æœkeyä¸ä¸ºnilï¼Œæ ‡è®°keyå’Œvalue
+5ï¼‰è°ƒç”¨genlinkï¼Œåˆ¤æ–­è¡¨hçš„Ageå†³å®šæ˜¯å¦å†æ‰«æå®ƒ
 */
 static void traversestrongtable (global_State *g, Table *h) {
   Node *n, *limit = gnodelast(h);
@@ -629,15 +650,15 @@ static void traversestrongtable (global_State *g, Table *h) {
 
 
 /*
-±éÀúÒ»¸ö±í²¢½«ÆäÁ´½Óµ½ÊÊµ±µÄÁĞ±í¡£
-1£©ÏÈ»ñÈ¡±íhµÄÔª±íÖĞmode×Ö¶Î
-2£©±ê¼Ç±íhµÄÔª±í
-3£©ÅĞ¶Ï±íhµÄÈõ±íÀàĞÍÖ´ĞĞÏà¹Ø²Ù×÷
-3.1£©v£ºµ÷ÓÃtraverseweakvalue
-3.2£©k£ºµ÷ÓÃtraverseephemeron
-3.3£©kv£º±í·ÅÈëallweakÁ´±í
-4£©·ÇÈõ±í£¬µ÷ÓÃtraversestrongtable
-5£©·µ»Ø¹¤×÷Á¿£¬1 + array count + 2 * hash count
+éå†ä¸€ä¸ªè¡¨å¹¶å°†å…¶é“¾æ¥åˆ°é€‚å½“çš„åˆ—è¡¨ã€‚
+1ï¼‰å…ˆè·å–è¡¨hçš„å…ƒè¡¨ä¸­modeå­—æ®µ
+2ï¼‰æ ‡è®°è¡¨hçš„å…ƒè¡¨
+3ï¼‰åˆ¤æ–­è¡¨hçš„å¼±è¡¨ç±»å‹æ‰§è¡Œç›¸å…³æ“ä½œ
+3.1ï¼‰vï¼šè°ƒç”¨traverseweakvalue
+3.2ï¼‰kï¼šè°ƒç”¨traverseephemeron
+3.3ï¼‰kvï¼šè¡¨æ”¾å…¥allweaké“¾è¡¨
+4ï¼‰éå¼±è¡¨ï¼Œè°ƒç”¨traversestrongtable
+5ï¼‰è¿”å›å·¥ä½œé‡ï¼Œ1 + array count + 2 * hash count
 */
 static lu_mem traversetable (global_State *g, Table *h) {
   const char *weakkey, *weakvalue;
@@ -661,11 +682,11 @@ static lu_mem traversetable (global_State *g, Table *h) {
 
 
 /*
-±éÀúÒ»¸öuserdata
-1£©±ê¼ÇuµÄÔª±í
-2£©±ê¼ÇuµÄuser values
-3£©µ÷ÓÃgenlink£¬ÅĞ¶Ï±íhµÄAge¾ö¶¨ÊÇ·ñÔÙÉ¨ÃèËü
-4£©·µ»Ø¹¤×÷Á¿£¬1 + user values count
+éå†ä¸€ä¸ªuserdata
+1ï¼‰æ ‡è®°uçš„å…ƒè¡¨
+2ï¼‰æ ‡è®°uçš„user values
+3ï¼‰è°ƒç”¨genlinkï¼Œåˆ¤æ–­è¡¨hçš„Ageå†³å®šæ˜¯å¦å†æ‰«æå®ƒ
+4ï¼‰è¿”å›å·¥ä½œé‡ï¼Œ1 + user values count
 */
 static int traverseudata (global_State *g, Udata *u) {
   int i;
@@ -683,13 +704,13 @@ static int traverseudata (global_State *g, Udata *u) {
 ** NULL, so the use of 'markobjectN')
 */
 /*
-±éÀúÒ»¸öº¯Êıproto
-1£©±ê¼ÇfµÄsource
-2£©±ê¼ÇfµÄ³£Á¿ÁĞ±ík
-3£©±ê¼ÇfµÄupvalues
-4£©±ê¼ÇfµÄÇ¶Ì×protos
-5£©±ê¼ÇfµÄ±¾µØ±äÁ¿locvars
-6£©·µ»Ø¹¤×÷Á¿£¬1 + constants count + upvalue count + proto count + local count
+éå†ä¸€ä¸ªå‡½æ•°proto
+1ï¼‰æ ‡è®°fçš„source
+2ï¼‰æ ‡è®°fçš„å¸¸é‡åˆ—è¡¨k
+3ï¼‰æ ‡è®°fçš„upvalues
+4ï¼‰æ ‡è®°fçš„åµŒå¥—protos
+5ï¼‰æ ‡è®°fçš„æœ¬åœ°å˜é‡locvars
+6ï¼‰è¿”å›å·¥ä½œé‡ï¼Œ1 + constants count + upvalue count + proto count + local count
 */
 static int traverseproto (global_State *g, Proto *f) {
   int i;
@@ -707,9 +728,9 @@ static int traverseproto (global_State *g, Proto *f) {
 
 
 /*
-±éÀúC±Õ°ü
-1£©±ê¼ÇclµÄupvalues
-2£©·µ»Ø¹¤×÷Á¿£¬1 + upvalue count
+éå†Cé—­åŒ…
+1ï¼‰æ ‡è®°clçš„upvalues
+2ï¼‰è¿”å›å·¥ä½œé‡ï¼Œ1 + upvalue count
 */
 static int traverseCclosure (global_State *g, CClosure *cl) {
   int i;
@@ -723,10 +744,10 @@ static int traverseCclosure (global_State *g, CClosure *cl) {
 ** (Both can be NULL while closure is being created.)
 */
 /*
-±éÀúlua±Õ°ü
-1£©±ê¼ÇclµÄprototype
-2£©±ê¼ÇclµÄupvalues
-3£©·µ»Ø¹¤×÷Á¿£¬1 + upvalue count
+éå†luaé—­åŒ…
+1ï¼‰æ ‡è®°clçš„prototype
+2ï¼‰æ ‡è®°clçš„upvalues
+3ï¼‰è¿”å›å·¥ä½œé‡ï¼Œ1 + upvalue count
 */
 static int traverseLclosure (global_State *g, LClosure *cl) {
   int i;
@@ -752,14 +773,14 @@ static int traverseLclosure (global_State *g, LClosure *cl) {
 ** the propagate phase (which can only happen in incremental mode).
 */
 /*
-±éÀúthread
-1£©ÅĞ¶ÏthµÄageÊÇoid£¬»òÕßÔÚ´«²¥½×¶Î£¬½«th¼ÓÈëgrayagain
-2£©ÅĞ¶ÏthµÄstackÊÇ·ñ´´½¨£¬Îª´´½¨ÔòÖ±½Ó·µ»Ø¹¤×÷Á¿ 1
-3£©±ê¼ÇthÕ»ÉÏµÄvalue
-4£©±ê¼ÇthÖĞ´ò¿ªµÄupvalue
-5£©Èç¹ûÔÚautomic½×¶Î£¬Çå¿ÕstackÉÏµÄdead¶ÔÏó£¬²¢½«upvalue¹Òµ½g->twups
-6£©Èç¹û²»ÊÇ½ô¼±ÊÕ¼¯£¬Ôò³¢ÊÔÊÕËõthµÄ¶ÑÕ»
-7£©·µ»Ø¹¤×÷Á¿£¬1 + stack size
+éå†thread
+1ï¼‰åˆ¤æ–­thçš„ageæ˜¯oidï¼Œæˆ–è€…åœ¨ä¼ æ’­é˜¶æ®µï¼Œå°†thåŠ å…¥grayagain
+2ï¼‰åˆ¤æ–­thçš„stackæ˜¯å¦åˆ›å»ºï¼Œä¸ºåˆ›å»ºåˆ™ç›´æ¥è¿”å›å·¥ä½œé‡ 1
+3ï¼‰æ ‡è®°thæ ˆä¸Šçš„value
+4ï¼‰æ ‡è®°thä¸­æ‰“å¼€çš„upvalue
+5ï¼‰å¦‚æœåœ¨automicé˜¶æ®µï¼Œæ¸…ç©ºstackä¸Šçš„deadå¯¹è±¡ï¼Œå¹¶å°†thæŒ‚åˆ°g->twups
+6ï¼‰å¦‚æœä¸æ˜¯ç´§æ€¥æ”¶é›†ï¼Œåˆ™å°è¯•æ”¶ç¼©thçš„å †æ ˆ
+7ï¼‰è¿”å›å·¥ä½œé‡ï¼Œ1 + stack size
 */
 static int traversethread (global_State *g, lua_State *th) {
   UpVal *uv;
@@ -793,10 +814,10 @@ static int traversethread (global_State *g, lua_State *th) {
 ** traverse one gray object, turning it to black.
 */
 /*
-´«²¥±ê¼ÇgrayµÄhead¶ÔÏó
-1£©»ñÈ¡g->gray±£´æµ½o£¬²¢±ê¼ÇÎªºÚÉ«
-2£©½«o´ÓgrayÒÆ³ı£¬²¢½«grayÖ¸ÏòÏÂÒ»¸ö¶ÔÏó
-3£©±éÀú±ê¼Ço£¬²¢·µ»Ø¹¤×÷Á¿
+ä¼ æ’­æ ‡è®°grayçš„headå¯¹è±¡
+1ï¼‰è·å–g->grayä¿å­˜åˆ°oï¼Œå¹¶æ ‡è®°ä¸ºé»‘è‰²
+2ï¼‰å°†oä»grayç§»é™¤ï¼Œå¹¶å°†grayæŒ‡å‘ä¸‹ä¸€ä¸ªå¯¹è±¡
+3ï¼‰éå†æ ‡è®°oï¼Œå¹¶è¿”å›å·¥ä½œé‡
 */
 static lu_mem propagatemark (global_State *g) {
   GCObject *o = g->gray;
@@ -814,9 +835,7 @@ static lu_mem propagatemark (global_State *g) {
 }
 
 
-/*
-±éÀúgaryÁĞ±í£¬²¢¼ÆËãwork
-*/
+// éå†garyåˆ—è¡¨ï¼Œå¹¶è®¡ç®—work
 static lu_mem propagateall (global_State *g) {
   lu_mem tot = 0;
   while (g->gray)
@@ -833,12 +852,12 @@ static lu_mem propagateall (global_State *g) {
 **
 */
 /*
-¼¯ÖĞ´¦Àíephemeron±í
-1£©±éÀúg->ephemeron
-2£©½«±éÀúµ½µÄ±íÔªËØ±ê¼ÇÎªºÚÉ«£¬²¢±éÀú¸Ã±íÔªËØµÄ×ÓÔªËØ
-3£©Èç¹û±ê¼Ç³É¹¦Ôò±ê¼Çchanged
-4£©±ê¼Ç³É¹¦±éÀúÒ»´Îgraylist
-5£©Î´±ê¼Ç³É¹¦Ôò·´Ïò±éÀúÒ»´Î£¬Ö±µ½ÎŞ·¨±ê¼Çchanged
+é›†ä¸­å¤„ç†ephemeronè¡¨
+1ï¼‰éå†g->ephemeron
+2ï¼‰å°†éå†åˆ°çš„è¡¨å…ƒç´ æ ‡è®°ä¸ºé»‘è‰²ï¼Œå¹¶éå†è¯¥è¡¨å…ƒç´ çš„å­å…ƒç´ 
+3ï¼‰å¦‚æœæ ‡è®°æˆåŠŸåˆ™æ ‡è®°changed
+4ï¼‰æ ‡è®°æˆåŠŸéå†ä¸€æ¬¡graylist
+5ï¼‰æœªæ ‡è®°æˆåŠŸåˆ™åå‘éå†ä¸€æ¬¡ï¼Œç›´åˆ°æ— æ³•æ ‡è®°changed
 */
 static void convergeephemerons (global_State *g) {
   int changed;
@@ -875,11 +894,11 @@ static void convergeephemerons (global_State *g) {
 ** clear entries with unmarked keys from all weaktables in list 'l'
 */
 /*
-Çå³ıÁĞ±ílÖĞµÄËùÓĞÈõ±íµÄÎ´±ê¼ÇµÄkeys
-1£©±éÀúÁĞ±ílµÄgclistÖĞµÄËùÓĞ±í
-2£©ÕÒµ½±íhµÄ×îºóÒ»¸öhashÔªËØ£¬±éÀú±íh
-3£©Èç¹û¸Ã¼üÖµ¶ÔµÄkeyÎ´±ê¼Ç£¬Ôò½«valueÉèÖÃÎ´¿Õ
-4£©Èç¹û¸Ã¼üÖµ¶ÔµÄvalueÎª¿Õ£¬ÔòÇå³ı¸Ãkey
+æ¸…é™¤åˆ—è¡¨lä¸­çš„æ‰€æœ‰å¼±è¡¨çš„æœªæ ‡è®°çš„keys
+1ï¼‰éå†åˆ—è¡¨lçš„gclistä¸­çš„æ‰€æœ‰è¡¨
+2ï¼‰æ‰¾åˆ°è¡¨hçš„æœ€åä¸€ä¸ªhashå…ƒç´ ï¼Œéå†è¡¨h
+3ï¼‰å¦‚æœè¯¥é”®å€¼å¯¹çš„keyæœªæ ‡è®°ï¼Œåˆ™å°†valueè®¾ç½®æœªç©º
+4ï¼‰å¦‚æœè¯¥é”®å€¼å¯¹çš„valueä¸ºç©ºï¼Œåˆ™æ¸…é™¤è¯¥key
 */
 static void clearbykeys (global_State *g, GCObject *l) {
   for (; l; l = gco2t(l)->gclist) {
@@ -901,13 +920,13 @@ static void clearbykeys (global_State *g, GCObject *l) {
 ** to element 'f'
 */
 /*
-Çå³ıÁĞ±ílÖĞµÄËùÓĞÈõ±íµÄÎ´±ê¼ÇµÄvalues,Ö±µ½Óöµ½ÔªËØfÎªÖ¹
-1£©±éÀúÁĞ±ílµÄgclistÖĞµÄËùÓĞ±í
-2£©»ñÈ¡±íhµÄ×îºóÒ»¸öhashÔªËØlimitºÍarrayµÄ³¤¶È
-3£©±éÀú±íhµÄarray²¿·Ö£¬Èç¹ûÖµÎ´±ê¼Ç£¬Ôò½«valueÉèÖÃÎ´¿Õ
-4£©ÕÒµ½±íhµÄ×îºóÒ»¸öhashÔªËØ£¬±éÀú±íh
-5£©±éÀú±íhµÄhash²¿·Ö£¬Èç¹û¸Ã¼üÖµ¶ÔµÄvalueÎ´±ê¼Ç£¬Ôò½«valueÉèÖÃÎ´¿Õ
-6£©Èç¹û¸Ã¼üÖµ¶ÔµÄvalueÎª¿Õ£¬ÔòÇå³ı¸Ãkey
+æ¸…é™¤åˆ—è¡¨lä¸­çš„æ‰€æœ‰å¼±è¡¨çš„æœªæ ‡è®°çš„values,ç›´åˆ°é‡åˆ°å…ƒç´ fä¸ºæ­¢
+1ï¼‰éå†åˆ—è¡¨lçš„gclistä¸­çš„æ‰€æœ‰è¡¨
+2ï¼‰è·å–è¡¨hçš„æœ€åä¸€ä¸ªhashå…ƒç´ limitå’Œarrayçš„é•¿åº¦
+3ï¼‰éå†è¡¨hçš„arrayéƒ¨åˆ†ï¼Œå¦‚æœå€¼æœªæ ‡è®°ï¼Œåˆ™å°†valueè®¾ç½®æœªç©º
+4ï¼‰æ‰¾åˆ°è¡¨hçš„æœ€åä¸€ä¸ªhashå…ƒç´ ï¼Œéå†è¡¨h
+5ï¼‰éå†è¡¨hçš„hashéƒ¨åˆ†ï¼Œå¦‚æœè¯¥é”®å€¼å¯¹çš„valueæœªæ ‡è®°ï¼Œåˆ™å°†valueè®¾ç½®æœªç©º
+6ï¼‰å¦‚æœè¯¥é”®å€¼å¯¹çš„valueä¸ºç©ºï¼Œåˆ™æ¸…é™¤è¯¥key
 */
 static void clearbyvalues (global_State *g, GCObject *l, GCObject *f) {
   for (; l != f; l = gco2t(l)->gclist) {
@@ -931,9 +950,9 @@ static void clearbyvalues (global_State *g, GCObject *l, GCObject *f) {
 
 
 /*
-ÊÍ·Åupvalue
-1£©Èç¹ûuvÊÇ´ò¿ªµÄ£¬unlinkÕâ¸öuv¶ÔÏó
-2£©ÊÍ·Åuv¶ÔÏóµÄÄÚ´æ
+é‡Šæ”¾upvalue
+1ï¼‰å¦‚æœuvæ˜¯æ‰“å¼€çš„ï¼Œunlinkè¿™ä¸ªuvå¯¹è±¡
+2ï¼‰é‡Šæ”¾uvå¯¹è±¡çš„å†…å­˜
 */
 static void freeupval (lua_State *L, UpVal *uv) {
   if (upisopen(uv))
@@ -943,9 +962,9 @@ static void freeupval (lua_State *L, UpVal *uv) {
 
 
 /*
-ÊÍ·ÅÒ»¸öGCObject
-1£©switch¶ÔÏóÀàĞÍ
-2£©µ÷ÓÃ¶ÔÓ¦µÄÊÍ·Å½Ó¿Ú
+é‡Šæ”¾ä¸€ä¸ªGCObject
+1ï¼‰switchå¯¹è±¡ç±»å‹
+2ï¼‰è°ƒç”¨å¯¹åº”çš„é‡Šæ”¾æ¥å£
 */
 static void freeobj (lua_State *L, GCObject *o) {
   switch (o->tt) {
@@ -1000,12 +1019,12 @@ static void freeobj (lua_State *L, GCObject *o) {
 ** list is finished. ('*countout' gets the number of elements traversed.)
 */
 /*
-É¨ÃèÒ»¸öÁĞ±í
-1£©¼ÆËãµ±Ç°ow£¨·Ç°×É«£©ºÍwhite£¨°×É«£©
-2£©±éÀúÁ´±ípÖĞµÄÇ°countin¸ö¶ÔÏó
-3£©Èç¹ûµ±Ç°¶ÔÏó±ê¼ÇËÀÍö£¬ÊÍ·Å¸Ä¶ÔÏó
-4£©±ê¼Ç¸Ä¶ÔÏó
-5£©¼ÆËã±ê¼ÇµÄ¶ÔÏó¸öÊı
+æ‰«æä¸€ä¸ªåˆ—è¡¨
+1ï¼‰è®¡ç®—å½“å‰owï¼ˆéç™½è‰²ï¼‰å’Œwhiteï¼ˆç™½è‰²ï¼‰
+2ï¼‰éå†é“¾è¡¨pä¸­çš„å‰countinä¸ªå¯¹è±¡
+3ï¼‰å¦‚æœå½“å‰å¯¹è±¡æ ‡è®°æ­»äº¡ï¼Œé‡Šæ”¾æ”¹å¯¹è±¡
+4ï¼‰æ ‡è®°æ”¹å¯¹è±¡
+5ï¼‰è®¡ç®—æ ‡è®°çš„å¯¹è±¡ä¸ªæ•°
 */
 static GCObject **sweeplist (lua_State *L, GCObject **p, int countin,
                              int *countout) {
@@ -1035,9 +1054,9 @@ static GCObject **sweeplist (lua_State *L, GCObject **p, int countin,
 ** sweep a list until a live object (or end of list)
 */
 /*
-É¨ÃèÒ»¸öÁĞ±í
-1£©Ã¿´Î´ÓÁ´±ípÀïÈ¡³öÒ»¸ö¶ÔÏó½øĞĞÉ¨Ãè
-2£©¶ÔÏóÎªlive»òÕß±éÀúÍê·µ»Ø¸Ã¶ÔÏó
+æ‰«æä¸€ä¸ªåˆ—è¡¨
+1ï¼‰æ¯æ¬¡ä»é“¾è¡¨pé‡Œå–å‡ºä¸€ä¸ªå¯¹è±¡è¿›è¡Œæ‰«æ
+2ï¼‰å¯¹è±¡ä¸ºliveæˆ–è€…éå†å®Œè¿”å›è¯¥å¯¹è±¡
 */
 static GCObject **sweeptolive (lua_State *L, GCObject **p) {
   GCObject **old = p;
@@ -1060,10 +1079,10 @@ static GCObject **sweeptolive (lua_State *L, GCObject **p) {
 ** If possible, shrink string table.
 */
 /*
-¼ì²éstring tableµÄ³ß´ç
-1£©²»ÊÇgcemergency
-2£©string tableµÄÊ¹ÓÃÁ¿Ğ¡ÓÚ×ÜÁ¿µÄ1/4£¬½«strtµÄ³ß´çËõĞ¡µ½µ±Ç°µÄ1/2
-3£©»ØÊÕÄÚ´æ£¬ÖØĞÂ¼ÆËãGCestimateºÍGCdebt
+æ£€æŸ¥string tableçš„å°ºå¯¸
+1ï¼‰ä¸æ˜¯gcemergency
+2ï¼‰string tableçš„ä½¿ç”¨é‡å°äºæ€»é‡çš„1/4ï¼Œå°†strtçš„å°ºå¯¸ç¼©å°åˆ°å½“å‰çš„1/2
+3ï¼‰å›æ”¶å†…å­˜ï¼Œé‡æ–°è®¡ç®—GCestimateå’ŒGCdebt
 */
 static void checkSizes (lua_State *L, global_State *g) {
   if (!g->gcemergency) {
@@ -1081,12 +1100,12 @@ static void checkSizes (lua_State *L, global_State *g) {
 ** link it back into the 'allgc' list.
 */
 /*
-½«tobefnzÁĞ±íÖĞµÄudataÈ¡³ö·Å½øallgcÁĞ±í
- 1£©´ÓtobefnzÖĞÈ¡³öÒ»¸ö¶ÔÏó
- 2£©½«¸Ã¶ÔÏó·Åµ½allgcµÄÍ·²¿
- 3£©½«¸Ã¶ÔÏó±ê¼ÇÎªFINALIZEDBIT
- 4£©Èç¹ûÔÚsweep½×¶Î£¬ÉèÖÃÎª°×É«
- 5£©Èç¹û¶ÔÏóoµÄageÊÇOLD1£¬½«¸Ã¶ÔÏó¸³Öµ¸øfirstold1
+å°†tobefnzåˆ—è¡¨ä¸­çš„udataå–å‡ºæ”¾è¿›allgcåˆ—è¡¨
+ 1ï¼‰ä»tobefnzä¸­å–å‡ºä¸€ä¸ªå¯¹è±¡
+ 2ï¼‰å°†è¯¥å¯¹è±¡æ”¾åˆ°allgcçš„å¤´éƒ¨
+ 3ï¼‰å°†è¯¥å¯¹è±¡æ ‡è®°ä¸ºFINALIZEDBIT
+ 4ï¼‰å¦‚æœåœ¨sweepé˜¶æ®µï¼Œè®¾ç½®ä¸ºç™½è‰²
+ 5ï¼‰å¦‚æœå¯¹è±¡oçš„ageæ˜¯OLD1ï¼Œå°†è¯¥å¯¹è±¡èµ‹å€¼ç»™firstold1
 */
 static GCObject *udata2finalize (global_State *g) {
   GCObject *o = g->tobefnz;  /* get first element */
@@ -1103,7 +1122,7 @@ static GCObject *udata2finalize (global_State *g) {
 }
 
 
-// Ö´ĞĞudµÄ__gc·½·¨
+// æ‰§è¡Œudçš„__gcæ–¹æ³•
 static void dothecall (lua_State *L, void *ud) {
   UNUSED(ud);
   luaD_callnoyield(L, L->top - 2, 0);
@@ -1111,13 +1130,13 @@ static void dothecall (lua_State *L, void *ud) {
 
 
 /*
-Ö´ĞĞÒ»¸öuserdataµÄ__gc·½·¨
-1£©´ÓtobefnzÖĞÕÒµ½Ò»¸ö¶ÔÏó
-2£©²éÑ¯¸Ã¶ÔÏóµÄ__gcÔª·½·¨
-3£©±£´æluaStateµÄ×´Ì¬
-4£©Ñ¹Èë·½·¨ºÍ¶ÔÏó£¬Ö´ĞĞ__gcº¯Êı
-5£©»Ö¸´luaStateµÄ×´Ì¬
-6£©´¦Àí´íÎóĞÅÏ¢
+æ‰§è¡Œä¸€ä¸ªuserdataçš„__gcæ–¹æ³•
+1ï¼‰ä»tobefnzä¸­æ‰¾åˆ°ä¸€ä¸ªå¯¹è±¡
+2ï¼‰æŸ¥è¯¢è¯¥å¯¹è±¡çš„__gcå…ƒæ–¹æ³•
+3ï¼‰ä¿å­˜luaStateçš„çŠ¶æ€
+4ï¼‰å‹å…¥æ–¹æ³•å’Œå¯¹è±¡ï¼Œæ‰§è¡Œ__gcå‡½æ•°
+5ï¼‰æ¢å¤luaStateçš„çŠ¶æ€
+6ï¼‰å¤„ç†é”™è¯¯ä¿¡æ¯
 */
 static void GCTM (lua_State *L) {
   global_State *g = G(L);
@@ -1150,7 +1169,7 @@ static void GCTM (lua_State *L) {
 /*
 ** Call a few finalizers
 */
-// Ö´ĞĞÉÙÁ¿£¨n¸ö£©µÄuserdataµÄfinalizers
+// æ‰§è¡Œå°‘é‡ï¼ˆnä¸ªï¼‰çš„userdataçš„finalizers
 static int runafewfinalizers (lua_State *L, int n) {
   global_State *g = G(L);
   int i;
@@ -1163,7 +1182,7 @@ static int runafewfinalizers (lua_State *L, int n) {
 /*
 ** call all pending finalizers
 */
-// Ö´ĞĞËùÓĞµÄuserdataµÄfinalizers
+// æ‰§è¡Œæ‰€æœ‰çš„userdataçš„finalizers
 static void callallpendingfinalizers (lua_State *L) {
   global_State *g = G(L);
   while (g->tobefnz)
@@ -1174,7 +1193,7 @@ static void callallpendingfinalizers (lua_State *L) {
 /*
 ** find last 'next' field in list 'p' list (to add elements in its end)
 */
-// ²éÕÒÁ´±íµÄtailÔªËØ
+// æŸ¥æ‰¾é“¾è¡¨çš„tailå…ƒç´ 
 static GCObject **findlast (GCObject **p) {
   while (*p != NULL)
     p = &(*p)->next;
@@ -1212,7 +1231,7 @@ static void separatetobefnz (global_State *g, int all) {
 /*
 ** If pointer 'p' points to 'o', move it to the next element.
 */
-// Èç¹ûpÖ¸Ïòo, pÖ´ĞĞpµÄnext
+// å¦‚æœpæŒ‡å‘o, pæ‰§è¡Œpçš„next
 static void checkpointer (GCObject **p, GCObject *o) {
   if (o == *p)
     *p = o->next;
@@ -1223,7 +1242,7 @@ static void checkpointer (GCObject **p, GCObject *o) {
 ** Correct pointers to objects inside 'allgc' list when
 ** object 'o' is being removed from the list.
 */
-// µ÷ÕûgcµÄ´æ´¢Á´±í
+// è°ƒæ•´gcçš„å­˜å‚¨é“¾è¡¨
 static void correctpointers (global_State *g, GCObject *o) {
   checkpointer(&g->survival, o);
   checkpointer(&g->old1, o);
@@ -1355,9 +1374,7 @@ static GCObject **sweepgen (lua_State *L, global_State *g, GCObject **p,
 ** age. In incremental mode, all objects are 'new' all the time,
 ** except for fixed strings (which are always old).
 */
-/*
-½«Á´±ípÈ«²¿±ê¼ÇÎª°×É«
-*/
+// å°†é“¾è¡¨på…¨éƒ¨æ ‡è®°ä¸ºç™½è‰²
 static void whitelist (global_State *g, GCObject *p) {
   int white = luaC_white(g);
   for (; p != NULL; p = p->next)
@@ -1407,9 +1424,7 @@ static GCObject **correctgraylist (GCObject **p) {
 /*
 ** Correct all gray lists, coalescing them into 'grayagain'.
 */
-/*
-ĞŞÕıËùÓĞµÄ»ÒÉ«±í£¬ºÏ²¢µ½grayagain
-*/
+// ä¿®æ­£æ‰€æœ‰çš„ç°è‰²è¡¨ï¼Œåˆå¹¶åˆ°grayagain
 static void correctgraylists (global_State *g) {
   GCObject **list = correctgraylist(&g->grayagain);
   *list = g->weak; g->weak = NULL;
@@ -1427,10 +1442,10 @@ static void correctgraylists (global_State *g) {
 ** in the atomic step.
 */
 /*
-½«fromµ½toµÄold1×´Ì¬µÄ¶ÔÏó±ê¼Çold
-1£©±éÀú´Ófromµ½toµÄ¶ÔÏó
-2£©Èç¹û¶ÔÏóageÎªold1,±ê¼ÇÎªold
-3£©Èç¹ûÖ®Ç°ÊÇºÚÉ«£¬ÔòÖØĞÂ±ê¼Ç¶ÔÏó
+å°†fromåˆ°toçš„old1çŠ¶æ€çš„å¯¹è±¡æ ‡è®°old
+1ï¼‰éå†ä»fromåˆ°toçš„å¯¹è±¡
+2ï¼‰å¦‚æœå¯¹è±¡ageä¸ºold1,æ ‡è®°ä¸ºold
+3ï¼‰å¦‚æœä¹‹å‰æ˜¯é»‘è‰²ï¼Œåˆ™é‡æ–°æ ‡è®°å¯¹è±¡
 */
 static void markold (global_State *g, GCObject *from, GCObject *to) {
   GCObject *p;
@@ -1449,10 +1464,10 @@ static void markold (global_State *g, GCObject *from, GCObject *to) {
 ** Finish a young-generation collection.
 */
 /*
-½áÊøÒ»´Îyoung·Ö´úÊÕ¼¯
-1£©
-2£©¼ì²é×Ö·û´®±í£¬¿´ÄÜ·ñÊÕËõ
-3£©²»ÊÇ½ô¼±gcÔò´¦ÀíËùÓĞ´ı¶¨µÄfinalizer
+ç»“æŸä¸€æ¬¡youngåˆ†ä»£æ”¶é›†
+1ï¼‰
+2ï¼‰æ£€æŸ¥å­—ç¬¦ä¸²è¡¨ï¼Œçœ‹èƒ½å¦æ”¶ç¼©
+3ï¼‰ä¸æ˜¯ç´§æ€¥gcåˆ™å¤„ç†æ‰€æœ‰å¾…å®šçš„finalizer
 */
 static void finishgencycle (lua_State *L, global_State *g) {
   correctgraylists(g);
@@ -1468,9 +1483,7 @@ static void finishgencycle (lua_State *L, global_State *g) {
 ** atomic step. Then, sweep all lists and advance pointers. Finally,
 ** finish the collection.
 */
-/*
-Ö´ĞĞÒ»´Îyoung·Ö´úÊÕ¼¯
-*/
+// æ‰§è¡Œä¸€æ¬¡youngåˆ†ä»£æ”¶é›†
 static void youngcollection (lua_State *L, global_State *g) {
   GCObject **psurvival;  /* to point to first non-dead survival object */
   GCObject *dummy;  /* dummy out parameter to 'sweepgen' */
@@ -1512,6 +1525,14 @@ static void youngcollection (lua_State *L, global_State *g) {
 ** surviving objects to old. Threads go back to 'grayagain'; everything
 ** else is turned black (not in any gray list).
 */
+/*
+åŸå­æ“ä½œè¿›å…¥åˆ†ä»£æ¨¡å¼
+1ï¼‰æ¸…ç†graylistï¼Œè¿›å…¥GCSswpallgcé˜¶æ®µ
+2ï¼‰æ‰«ææ‰€æœ‰çš„oldå¯¹è±¡ï¼Œå¹¶å°†æ‰€æœ‰çš„allgcå¯¹è±¡è®¾ç½®ä¸ºold
+3ï¼‰æ‰«æfinobjï¼Œå¹¶å°†æ‰€æœ‰çš„finobjå¯¹è±¡è®¾ç½®ä¸ºold
+4ï¼‰æ‰«ætobefnzï¼Œå¹¶å°†æ‰€æœ‰çš„tobefnzå¯¹è±¡è®¾ç½®ä¸ºold
+5ï¼‰è¿”å›åˆ†ä»£æ¨¡å¼ï¼Œç»“æŸä¸€æ¬¡å¾ªç¯
+*/
 static void atomic2gen (lua_State *L, global_State *g) {
   cleargraylists(g);
   /* sweep all elements making them old */
@@ -1541,8 +1562,8 @@ static void atomic2gen (lua_State *L, global_State *g) {
 ** collection.
 */
 /*
-½øÈë·Ö´úGCÄ£Ê½
-±ØĞë³ÖĞøÒ»¸öÔ­×ÓÑ­»·È·±£ËùÓĞ¶ÔÏó¶¼ÒÑÕıÈ·±ê¼Ç£¬²¢ÔÚ±íÖĞÏÔÊ¾¶¼±»Çå³ıÁË£¬È»ºó½«ËùÓĞ¶ÔÏó±äÎª¾É¶ÔÏó²¢Íê³ÉÊÕ¼¯
+è¿›å…¥åˆ†ä»£GCæ¨¡å¼
+å¿…é¡»æŒç»­ä¸€ä¸ªåŸå­å¾ªç¯ç¡®ä¿æ‰€æœ‰å¯¹è±¡éƒ½å·²æ­£ç¡®æ ‡è®°ï¼Œå¹¶åœ¨è¡¨ä¸­æ˜¾ç¤ºéƒ½è¢«æ¸…é™¤äº†ï¼Œç„¶åå°†æ‰€æœ‰å¯¹è±¡å˜ä¸ºæ—§å¯¹è±¡å¹¶å®Œæˆæ”¶é›†
 */
 static lu_mem entergen (lua_State *L, global_State *g) {
   lu_mem numobjs;
@@ -1560,9 +1581,9 @@ static lu_mem entergen (lua_State *L, global_State *g) {
 ** and go to the pause state.
 */
 /*
-½øÈëÔöÁ¿GCÄ£Ê½
-±êÊ¶ËùÓĞµÄ¶ÔÏóÎª°×É«£¬Çå¿ÕËùÓĞµÄÔöÁ¿GCµÄÁĞ±í
-ĞŞ¸ÄÀàĞÍ£¬²¢ÉèÖÃÎªPAUSE×´Ì¬
+è¿›å…¥å¢é‡GCæ¨¡å¼
+æ ‡è¯†æ‰€æœ‰çš„å¯¹è±¡ä¸ºç™½è‰²ï¼Œæ¸…ç©ºæ‰€æœ‰çš„å¢é‡GCçš„åˆ—è¡¨
+ä¿®æ”¹ç±»å‹ï¼Œå¹¶è®¾ç½®ä¸ºPAUSEçŠ¶æ€
 */
 static void enterinc (global_State *g) {
   whitelist(g, g->allgc);
@@ -1579,9 +1600,7 @@ static void enterinc (global_State *g) {
 /*
 ** Change collector mode to 'newmode'.
 */
-/*
-¸Ä±äGCÄ£Ê½£¬Ä¬ÈÏÊÇINCÄ£Ê½
-*/
+// æ”¹å˜GCæ¨¡å¼ï¼Œé»˜è®¤æ˜¯INCæ¨¡å¼
 void luaC_changemode (lua_State *L, int newmode) {
   global_State *g = G(L);
   if (newmode != g->gckind) {
@@ -1597,9 +1616,7 @@ void luaC_changemode (lua_State *L, int newmode) {
 /*
 ** Does a full collection in generational mode.
 */
-/*
-Ö´ĞĞÒ»´ÎÈ«Á¿·Ö´úGC
-*/
+// æ‰§è¡Œä¸€æ¬¡å…¨é‡åˆ†ä»£GC
 static lu_mem fullgen (lua_State *L, global_State *g) {
   enterinc(g);
   return entergen(L, g);
@@ -1611,8 +1628,8 @@ static lu_mem fullgen (lua_State *L, global_State *g) {
 ** memory grows 'genminormul'%.
 */
 /*
-ÉèÖÃÏÂÒ»¸öĞ¡·Ö´úÑ­»·µÄÕ®Îñ
-debt = -µ±Ç°Ê¹ÓÃÄÚ´æ / 100 * genminormul
+è®¾ç½®ä¸‹ä¸€ä¸ªå°åˆ†ä»£å¾ªç¯çš„å€ºåŠ¡
+debt = -å½“å‰ä½¿ç”¨å†…å­˜ / 100 * genminormul
 */
 static void setminordebt (global_State *g) {
   luaE_setdebt(g, -(cast(l_mem, (gettotalbytes(g) / 100)) * g->genminormul));
@@ -1639,6 +1656,15 @@ static void setminordebt (global_State *g) {
 ** number of objects traversed (returned by 'atomic') as a proxy. The
 ** field 'g->lastatomic' keeps this count from the last collection.
 ** ('g->lastatomic != 0' also means that the last collection was bad.)
+*/
+/*
+æ‰§è¡Œä¸€æ¬¡å•æ­¥åˆ†ä»£å…¨é‡GC
+1ï¼‰ç¡®ä¿åˆ‡æ¢åˆ°INCæ¨¡å¼
+2ï¼‰æ‰§è¡ŒGCç›´åˆ°è¾¾åˆ°GCSpropagate
+3ï¼‰markæ‰€æœ‰å¯¹è±¡
+4ï¼‰è¾¾åˆ°è¦æ±‚ï¼Œè¿”å›åˆ†ä»£æ¨¡å¼ï¼Œå¹¶è®¾ç½®å°åˆ†ä»£å€ºåŠ¡
+5ï¼‰å¼€å§‹æ‰«æï¼Œç›´åˆ°GCSpause
+6ï¼‰setpauseå®Œæˆä¸€æ¬¡gcå¾ªç¯
 */
 static void stepgenfull (lua_State *L, global_State *g) {
   lu_mem newatomic;  /* count of traversed objects */
@@ -1681,14 +1707,14 @@ static void stepgenfull (lua_State *L, global_State *g) {
 ** in that case, do a minor collection.
 */
 /*
-Ö´ĞĞÒ»´Î·Ö´úµ¥²½ÊÕ¼¯
-1£©ÅĞ¶ÏÉÏ´ÎÊÕ¼¯ÊÇ·ñÕı³££¬Èç²»Õı³£Ôò½øĞĞÒ»´ÎÖ÷·Ö´úµ¥²½GC
-2£©¼ÆËãÉÏ´ÎÖ÷·Ö´úÊÕ¼¯ºóµÄÄÚ´æ£¨majorbase£©ºÍ ´¥·¢ÏÂ´ÎÖ÷·Ö´úĞèÒªµÄÄÚ´æ£¨majorinc£©
-3.1£©Õ®Îñ´ó0²¢ÇÒ´ïµ½´¥·¢ÏÂ´ÎÖ÷·Ö´úgcµÄÌõ¼ş
-4£©Ö´ĞĞÒ»´ÎÖ÷·Ö´úGC
-4.1£©µ±Ç°ÄÚ´æĞ¡ÓÚ´¥·¢Ö÷·Ö´úgcµÄ1/2£¬ÉèÖÃĞ¡·Ö´úµÄÕ®Îñ
-4.2£©µ±Ç°ÄÚ´æ´óÓÚ´¥·¢Ö÷·Ö´úgcµÄ1/2£¬ÉèÖÃpause£¬µÈ´ıÖ´ĞĞÏÂ´ÎÖ÷·Ö´úgc
-3.2£©Ö´ĞĞÒ»´ÎĞ¡·Ö´úgcÊÕ¼¯²¢ÉèÖÃĞ¡·Ö´úµÄÕ®Îñ
+æ‰§è¡Œä¸€æ¬¡åˆ†ä»£å•æ­¥æ”¶é›†
+1ï¼‰åˆ¤æ–­ä¸Šæ¬¡æ”¶é›†æ˜¯å¦æ­£å¸¸ï¼Œå¦‚ä¸æ­£å¸¸åˆ™è¿›è¡Œä¸€æ¬¡ä¸»åˆ†ä»£å•æ­¥GC
+2ï¼‰è®¡ç®—ä¸Šæ¬¡ä¸»åˆ†ä»£æ”¶é›†åçš„å†…å­˜ï¼ˆmajorbaseï¼‰å’Œ è§¦å‘ä¸‹æ¬¡ä¸»åˆ†ä»£éœ€è¦çš„å†…å­˜ï¼ˆmajorincï¼‰
+3.1ï¼‰å€ºåŠ¡å¤§0å¹¶ä¸”è¾¾åˆ°è§¦å‘ä¸‹æ¬¡ä¸»åˆ†ä»£gcçš„æ¡ä»¶
+4ï¼‰æ‰§è¡Œä¸€æ¬¡ä¸»åˆ†ä»£GC
+4.1ï¼‰å½“å‰å†…å­˜å°äºè§¦å‘ä¸»åˆ†ä»£gcçš„1/2ï¼Œè®¾ç½®å°åˆ†ä»£çš„å€ºåŠ¡
+4.2ï¼‰å½“å‰å†…å­˜å¤§äºè§¦å‘ä¸»åˆ†ä»£gcçš„1/2ï¼Œè®¾ç½®pauseï¼Œç­‰å¾…æ‰§è¡Œä¸‹æ¬¡ä¸»åˆ†ä»£gc
+3.2ï¼‰æ‰§è¡Œä¸€æ¬¡å°åˆ†ä»£gcæ”¶é›†å¹¶è®¾ç½®å°åˆ†ä»£çš„å€ºåŠ¡
 */
 static void genstep (lua_State *L, global_State *g) {
   if (g->lastatomic != 0)  /* last collection was a bad one? */
@@ -1734,11 +1760,11 @@ static void genstep (lua_State *L, global_State *g) {
 ** because Lua cannot even start with less than PAUSEADJ bytes).
 */
 /*
-½øÈëÔİÍ£×´Ì¬£¬µÈ´ıtimeÖ®ºó½øĞĞÒ»´ÎĞÂµÄGCÑ­»·
-1£©»ñÈ¡gcµÄpause²ÎÊı
-2£©¼ÆËãestimate
-3£©¼ÆËãÕ®ÎñãĞÖµthreshold
-4£©¼ÆËãÕ®Îñdebt²¢ÉèÖÃ
+è¿›å…¥æš‚åœçŠ¶æ€ï¼Œç­‰å¾…timeä¹‹åè¿›è¡Œä¸€æ¬¡æ–°çš„GCå¾ªç¯
+1ï¼‰è·å–gcçš„pauseå‚æ•°
+2ï¼‰è®¡ç®—estimate
+3ï¼‰è®¡ç®—å€ºåŠ¡é˜ˆå€¼threshold
+4ï¼‰è®¡ç®—å€ºåŠ¡debtå¹¶è®¾ç½®
 */
 static void setpause (global_State *g) {
   l_mem threshold, debt;
@@ -1762,9 +1788,9 @@ static void setpause (global_State *g) {
 ** real sweep.
 */
 /*
-½øÈëGCSswpallgc×´Ì¬
-1£©ÉèÖÃGCSswpallgc×´Ì¬
-2£©ÉèÖÃsweepgc¶ÔÏó
+è¿›å…¥GCSswpallgcçŠ¶æ€
+1ï¼‰è®¾ç½®GCSswpallgcçŠ¶æ€
+2ï¼‰è®¾ç½®sweepgcå¯¹è±¡
 */
 static void entersweep (lua_State *L) {
   global_State *g = G(L);
@@ -1778,9 +1804,7 @@ static void entersweep (lua_State *L) {
 ** Delete all objects in list 'p' until (but not including) object
 ** 'limit'.
 */
-/*
-´ÓÁ´±íPÖĞÊÍ·Å¶ÔÏó£¬Ö±µ½±éÀúµ½¶ÔÏólimit
-*/
+// ä»é“¾è¡¨Pä¸­é‡Šæ”¾å¯¹è±¡ï¼Œç›´åˆ°éå†åˆ°å¯¹è±¡limit
 static void deletelist (lua_State *L, GCObject *p, GCObject *limit) {
   while (p != limit) {
     GCObject *next = p->next;
@@ -1794,9 +1818,7 @@ static void deletelist (lua_State *L, GCObject *p, GCObject *limit) {
 ** Call all finalizers of the objects in the given Lua state, and
 ** then free all objects, except for the main thread.
 */
-/*
-É¾³ıËùÓĞµÄ¶ÔÏó£¨³ıÁËmain thread£©
-*/
+// åˆ é™¤æ‰€æœ‰çš„å¯¹è±¡ï¼ˆé™¤äº†main threadï¼‰
 void luaC_freeallobjects (lua_State *L) {
   global_State *g = G(L);
   luaC_changemode(L, KGC_INC);
@@ -1854,10 +1876,10 @@ static lu_mem atomic (lua_State *L) {
 
 
 /*
-½øĞĞÒ»´ÎÉ¨Ãè
-1£©ÅĞ¶ÏsweepgcÊÇ·ñ´æÔÚ
-2£©Èç¹û´æÔÚ£¬Ôò¼ÇÂ¼É¨ÃèsweepgcµÄwork£¬²¢ÆÀ¹ÀGCestimate
-3£©Èç¹û²»´æÔÚ£¬Ôò½øÈëÏÂÒ»¸ö×´Ì¬£¬²¢ÉèÖÃsweepgcÎªÏÂÒ»ÌõÁ´±í£¨Èç¹ûÓĞ£©µÄhead
+è¿›è¡Œä¸€æ¬¡æ‰«æ
+1ï¼‰åˆ¤æ–­sweepgcæ˜¯å¦å­˜åœ¨
+2ï¼‰å¦‚æœå­˜åœ¨ï¼Œåˆ™è®°å½•æ‰«æsweepgcçš„workï¼Œå¹¶è¯„ä¼°GCestimate
+3ï¼‰å¦‚æœä¸å­˜åœ¨ï¼Œåˆ™è¿›å…¥ä¸‹ä¸€ä¸ªçŠ¶æ€ï¼Œå¹¶è®¾ç½®sweepgcä¸ºä¸‹ä¸€æ¡é“¾è¡¨ï¼ˆå¦‚æœæœ‰ï¼‰çš„head
 */
 static int sweepstep (lua_State *L, global_State *g,
                       int nextstate, GCObject **nextlist) {
@@ -1877,15 +1899,15 @@ static int sweepstep (lua_State *L, global_State *g,
 
 
 /*
-¸ù¾İµ±Ç°×´Ì¬Ö´ĞĞÒ»´Îµ¥ÔªÊÕ¼¯
-1£©GCSpause£¨²»¿É²ğ·Ö£©£¬Æô¶¯Ò»ÂÖĞÂµÄ»ØÊÕ
-2£©GCSpropagate£¨¿É²ğ·Ö£©£¬´ÓgrayÁ´±íÖĞÄÃ³öÍ·²¿obj£¬traverse¸Ãobj
-3£©GCSenteratomic£¨²»¿É²ğ·Ö£©£¬ÓÃÀ´È·±£markÒÑ¾­È«²¿Íê³É
-4£©GCSswpallgc£¨¿É²ğ·Ö£©£¬É¨ÃèallgcÁ´±í
-5£©GCSswpfinobj£¨¿É²ğ·Ö£©£¬É¨ÃèfinobjÁ´±í
-6£©GCSswptobefnz£¨¿É²ğ·Ö£©£¬É¨ÃètobefnzÁ´±í
-7£©GCSswpend£¨²»¿É²ğ·Ö£©£¬É¨ÃèÍê³É£¬¼ì²éstring table
-8£©GCScallfin£¨¿É²ğ·Ö£©£¬Íê³ÉÒ»´ÎGC¹ı³Ì
+æ ¹æ®å½“å‰çŠ¶æ€æ‰§è¡Œä¸€æ¬¡å•å…ƒæ”¶é›†
+1ï¼‰GCSpauseï¼ˆä¸å¯æ‹†åˆ†ï¼‰ï¼Œå¯åŠ¨ä¸€è½®æ–°çš„å›æ”¶
+2ï¼‰GCSpropagateï¼ˆå¯æ‹†åˆ†ï¼‰ï¼Œä»grayé“¾è¡¨ä¸­æ‹¿å‡ºå¤´éƒ¨objï¼Œtraverseè¯¥obj
+3ï¼‰GCSenteratomicï¼ˆä¸å¯æ‹†åˆ†ï¼‰ï¼Œç”¨æ¥ç¡®ä¿markå·²ç»å…¨éƒ¨å®Œæˆ
+4ï¼‰GCSswpallgcï¼ˆå¯æ‹†åˆ†ï¼‰ï¼Œæ‰«æallgcé“¾è¡¨
+5ï¼‰GCSswpfinobjï¼ˆå¯æ‹†åˆ†ï¼‰ï¼Œæ‰«æfinobjé“¾è¡¨
+6ï¼‰GCSswptobefnzï¼ˆå¯æ‹†åˆ†ï¼‰ï¼Œæ‰«ætobefnzé“¾è¡¨
+7ï¼‰GCSswpendï¼ˆä¸å¯æ‹†åˆ†ï¼‰ï¼Œæ‰«æå®Œæˆï¼Œæ£€æŸ¥string table
+8ï¼‰GCScallfinï¼ˆå¯æ‹†åˆ†ï¼‰ï¼Œå®Œæˆä¸€æ¬¡GCè¿‡ç¨‹
 */
 static lu_mem singlestep (lua_State *L) {
   global_State *g = G(L);
@@ -1954,9 +1976,7 @@ static lu_mem singlestep (lua_State *L) {
 ** advances the garbage collector until it reaches a state allowed
 ** by 'statemask'
 */
-/*
-²½½øGCÊÕ¼¯Æ÷Ö±µ½´ïµ½Ö¸¶¨×´Ì¬
-*/
+// æ­¥è¿›GCæ”¶é›†å™¨ç›´åˆ°è¾¾åˆ°æŒ‡å®šçŠ¶æ€ss
 void luaC_runtilstate (lua_State *L, int statesmask) {
   global_State *g = G(L);
   while (!testbit(statesmask, g->gcstate))
@@ -1972,12 +1992,12 @@ void luaC_runtilstate (lua_State *L, int statesmask) {
 ** controls when next step will be performed.
 */
 /*
-ÔöÁ¿Ä£Ê½µ¥²½ÊÕ¼¯
-1£©¼ÆËãGCµÄËÙ¶È(stepmul)ºÍÕ®Îñµ¥ÔªÊıÁ¿(debt)
-2£©¼ÆËãµ¥²½ĞèÒªÊÕ¼¯µÄµ¥ÔªÊıÁ¿(stepsize)
-3£©Ö´ĞĞµ¥²½ÊÕ¼¯£¬Ö±µ½ÊÕ¼¯µÄÄÚ´æ´ïµ½stepsize»òÕß×´Ì¬´ïµ½PAUSE
-4£©Èç¹û×´Ì¬ÎªPAUSE£¬ÔòÍê³ÉÒ»ÂÖÊÕ¼¯
-5£©·ñÔòÖØĞÂ¼ÆËãÕ®Îñ
+å¢é‡æ¨¡å¼å•æ­¥æ”¶é›†
+1ï¼‰è®¡ç®—GCçš„é€Ÿåº¦(stepmul)å’Œå€ºåŠ¡å•å…ƒæ•°é‡(debt)
+2ï¼‰è®¡ç®—å•æ­¥éœ€è¦æ”¶é›†çš„å•å…ƒæ•°é‡(stepsize)
+3ï¼‰æ‰§è¡Œå•æ­¥æ”¶é›†ï¼Œç›´åˆ°æ”¶é›†çš„å†…å­˜è¾¾åˆ°stepsizeæˆ–è€…çŠ¶æ€è¾¾åˆ°PAUSE
+4ï¼‰å¦‚æœçŠ¶æ€ä¸ºPAUSEï¼Œåˆ™å®Œæˆä¸€è½®æ”¶é›†
+5ï¼‰å¦åˆ™é‡æ–°è®¡ç®—å€ºåŠ¡
 */
 static void incstep (lua_State *L, global_State *g) {
   int stepmul = (getgcparam(g->gcstepmul) | 1);  /* avoid division by 0 */
@@ -2001,9 +2021,9 @@ static void incstep (lua_State *L, global_State *g) {
 ** performs a basic GC step if collector is running
 */
 /*
-Ö´ĞĞÒ»´Î»ù´¡µÄGC²½Öè
-1£©ÅĞ¶ÏÊÕ¼¯Æ÷ÊÇ·ñÔÚÔËĞĞ
-2£©¸ù¾İGCÄ£Ê½½øĞĞÒ»´Îµ¥²½GC
+æ‰§è¡Œä¸€æ¬¡åŸºç¡€çš„GCæ­¥éª¤
+1ï¼‰åˆ¤æ–­æ”¶é›†å™¨æ˜¯å¦åœ¨è¿è¡Œ
+2ï¼‰æ ¹æ®GCæ¨¡å¼è¿›è¡Œä¸€æ¬¡å•æ­¥GC
 */
 void luaC_step (lua_State *L) {
   global_State *g = G(L);
@@ -2025,11 +2045,11 @@ void luaC_step (lua_State *L) {
 ** changed, nothing will be collected).
 */
 /*
-Ö´ĞĞÒ»´ÎÔöÁ¿Ä£Ê½µÄÈ«Á¿GC
-1£©Èç¹û²»ÔÚÉ¨Ãè×´Ì¬£¬ÔòÖ´ĞĞÉ¨Ãè
-2£©ÏÈµÈ´ıÊÕ¼¯Æ÷»Ö¸´PAUSE
-3£©Ö´ĞĞÒ»´ÎÈ«Á¿ÊÕ¼¯£¬µÈ´ı×´Ì¬±ä³ÉFIN×´Ì¬
-2£©µÈ´ıÊÕ¼¯Æ÷»Ö¸´PAUSE
+æ‰§è¡Œä¸€æ¬¡å¢é‡æ¨¡å¼çš„å…¨é‡GC
+1ï¼‰å¦‚æœä¸åœ¨æ‰«æçŠ¶æ€ï¼Œåˆ™æ‰§è¡Œæ‰«æ
+2ï¼‰å…ˆç­‰å¾…æ”¶é›†å™¨æ¢å¤PAUSE
+3ï¼‰æ‰§è¡Œä¸€æ¬¡å…¨é‡æ”¶é›†ï¼Œç­‰å¾…çŠ¶æ€å˜æˆFINçŠ¶æ€
+2ï¼‰ç­‰å¾…æ”¶é›†å™¨æ¢å¤PAUSE
 */
 static void fullinc (lua_State *L, global_State *g) {
   if (keepinvariant(g))  /* black objects? */
@@ -2050,10 +2070,10 @@ static void fullinc (lua_State *L, global_State *g) {
 ** unexpected ways (running finalizers and shrinking some structures).
 */
 /*
-½øĞĞÒ»´ÎÈ«Á¿GC
-1£©ÉèÖÃÊÇ·ñ½ô¼±GCµÄ±êÊ¶
-2£©¸ù¾İGCÄ£Ê½½øĞĞÒ»´ÎÈ«Á¿GC
-3£©Çå³ı½ô¼±GC±êÊ¶
+è¿›è¡Œä¸€æ¬¡å…¨é‡GC
+1ï¼‰è®¾ç½®æ˜¯å¦ç´§æ€¥GCçš„æ ‡è¯†
+2ï¼‰æ ¹æ®GCæ¨¡å¼è¿›è¡Œä¸€æ¬¡å…¨é‡GC
+3ï¼‰æ¸…é™¤ç´§æ€¥GCæ ‡è¯†
 */
 void luaC_fullgc (lua_State *L, int isemergency) {
   global_State *g = G(L);

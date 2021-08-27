@@ -39,7 +39,7 @@
 #define GCSpause	8
 
 
-// ÅĞ¶ÏÊÇ·ñÔÚsweep½×¶Î
+// åˆ¤æ–­æ˜¯å¦åœ¨sweepé˜¶æ®µ
 #define issweepphase(g)  \
 	(GCSswpallgc <= (g)->gcstate && (g)->gcstate <= GCSswpend)
 
@@ -53,8 +53,8 @@
 */
 
 /*
-¼ì²éÔÚÊ²Ã´GC×´Ì¬Ö÷²»±äÁ¿ÊÇÎÈ¶¨µÄ£¨°×É«¶ÔÏó²»ÄÜÖ¸ÏòºÚÉ«¶ÔÏó£©
-ÔÚÉ¨Ãè¹ı³ÌÖĞ£¬¿ÉÄÜ»áÆÆ»µÎÈ¶¨×´Ì¬
+æ£€æŸ¥åœ¨ä»€ä¹ˆGCçŠ¶æ€ä¸»ä¸å˜é‡æ˜¯ç¨³å®šçš„ï¼ˆç™½è‰²å¯¹è±¡ä¸èƒ½æŒ‡å‘é»‘è‰²å¯¹è±¡ï¼‰
+åœ¨æ‰«æè¿‡ç¨‹ä¸­ï¼Œå¯èƒ½ä¼šç ´åç¨³å®šçŠ¶æ€
 */
 #define keepinvariant(g)	((g)->gcstate <= GCSatomic)
 
@@ -77,7 +77,7 @@
 ** used for object "age" in generational mode. Last bit is used
 ** by tests.
 */
-/* Ç°3bit£¨0-7£©ÓÃÀ´´æ´¢age */
+/* å‰3bitï¼ˆ0-7ï¼‰ç”¨æ¥å­˜å‚¨age */
 #define WHITE0BIT	3  /* object is white (type 0) */
 #define WHITE1BIT	4  /* object is white (type 1) */
 #define BLACKBIT	5  /* object is black */
@@ -91,10 +91,10 @@
 
 
 /*
-1£©iswhite: ÅĞ¶ÏxÊÇwhite
-2£©isblack: ÅĞ¶ÏxÊÇblack
-3£©isgray: ÅĞ¶ÏxÊÇgray£¨black + white£©
-4£©tofinalize: ÅĞ¶ÏxÊÇfinalize
+1ï¼‰iswhite: åˆ¤æ–­xæ˜¯white
+2ï¼‰isblack: åˆ¤æ–­xæ˜¯black
+3ï¼‰isgray: åˆ¤æ–­xæ˜¯grayï¼ˆblack + whiteï¼‰
+4ï¼‰tofinalize: åˆ¤æ–­xæ˜¯finalize
 */
 #define iswhite(x)      testbits((x)->marked, WHITEBITS)
 #define isblack(x)      testbit((x)->marked, BLACKBIT)
@@ -104,12 +104,12 @@
 #define tofinalize(x)	testbit((x)->marked, FINALIZEDBIT)
 
 /*
-1£©otherwhite: ·­×ªcurrentwhiteµÄwhite bit(3/4)
-2£©isdeadm: ÓëotherwhiteÏàÍ¬£¬ÓëcurrentwhiteÏà·´£¬ÉÏÒ»ÂÖµÄ¶ÔÏó£¬ĞèÒª±»ÊÍ·Å
-3£©isdead: ÅĞ¶Ï¶ÔÏóvÊÇ·ñËÀÍö
-4£©changewhite: Çå³ıµôwhite bit
-5£©nw2black: markÌí¼Óblack bit
-6£©luaC_white: ·µ»Øcurrentwhite
+1ï¼‰otherwhite: ç¿»è½¬currentwhiteçš„white bit(3/4)
+2ï¼‰isdeadm: ä¸otherwhiteç›¸åŒï¼Œä¸currentwhiteç›¸åï¼Œä¸Šä¸€è½®çš„å¯¹è±¡ï¼Œéœ€è¦è¢«é‡Šæ”¾
+3ï¼‰isdead: åˆ¤æ–­å¯¹è±¡væ˜¯å¦æ­»äº¡
+4ï¼‰changewhite: æ¸…é™¤æ‰white bit
+5ï¼‰nw2black: markæ·»åŠ black bit
+6ï¼‰luaC_white: è¿”å›currentwhite
 */
 #define otherwhite(g)	((g)->currentwhite ^ WHITEBITS)
 #define isdeadm(ow,m)	((m) & (ow))
@@ -134,10 +134,10 @@
 #define AGEBITS		7  /* all age bits (111) */
 
 /*
-1£©getage: ·µ»Ø¶ÔÏóoµÄage
-2£©setage: ÉèÖÃ¶ÔÏóoµÄage
-3£©isold: ¶ÔÏóoµÄage´óÓÚ´æ»î¶¼ÊÇOLD
-4£©changeage: ¸Ä±ä¶ÔÏóoµÄage
+1ï¼‰getage: è¿”å›å¯¹è±¡oçš„age
+2ï¼‰setage: è®¾ç½®å¯¹è±¡oçš„age
+3ï¼‰isold: å¯¹è±¡oçš„ageå¤§äºå­˜æ´»éƒ½æ˜¯OLD
+4ï¼‰changeage: æ”¹å˜å¯¹è±¡oçš„age
 */
 #define getage(o)	((o)->marked & AGEBITS)
 #define setage(o,a)  ((o)->marked = cast_byte(((o)->marked & (~AGEBITS)) | a))
@@ -159,7 +159,7 @@
 ** up to 1023 in a 'lu_byte'.
 */
 /*
-gc²ÎÊı×ª»»£¬ÔÊĞíÄ³Ğ©²ÎÊı´ïµ½1023£¬µ«ÄÜ´æ´¢µ½Ò»¸öbyteÄÚ
+gcå‚æ•°è½¬æ¢ï¼Œå…è®¸æŸäº›å‚æ•°è¾¾åˆ°1023ï¼Œä½†èƒ½å­˜å‚¨åˆ°ä¸€ä¸ªbyteå†…
 */
 #define getgcparam(p)	((p) * 4)
 #define setgcparam(p,v)	((p) = (v) / 4)
@@ -167,7 +167,7 @@ gc²ÎÊı×ª»»£¬ÔÊĞíÄ³Ğ©²ÎÊı´ïµ½1023£¬µ«ÄÜ´æ´¢µ½Ò»¸öbyteÄÚ
 #define LUAI_GCMUL      100
 
 /* how much to allocate before next GC step (log2) */
-/* luaµ¥²½gcÊÕ¼¯µÄ×Ö½ÚÊı */
+/* luaå•æ­¥gcæ”¶é›†çš„å­—èŠ‚æ•° */
 #define LUAI_GCSTEPSIZE 13      /* 8 KB */
 
 
@@ -177,8 +177,8 @@ gc²ÎÊı×ª»»£¬ÔÊĞíÄ³Ğ©²ÎÊı´ïµ½1023£¬µ«ÄÜ´æ´¢µ½Ò»¸öbyteÄÚ
 ** mode to improve performance. This is signaled by 'g->lastatomic != 0'.
 */
 /*
-ÊÇ·ñÉùÃ÷ÁË·Ö´úGCÄ£Ê½
-·Ö´úGCÄ£Ê½¿ÉÒÔÁÙÊ±×ª»»µ½ÔöÁ¿Ä£Ê½ÒÔÌáÉıĞÔÄÜ£¬Òò´Ëlastatomic²»µÈÓÚ0Ò²±íÊ¾·Ö´ú
+æ˜¯å¦å£°æ˜äº†åˆ†ä»£GCæ¨¡å¼
+åˆ†ä»£GCæ¨¡å¼å¯ä»¥ä¸´æ—¶è½¬æ¢åˆ°å¢é‡æ¨¡å¼ä»¥æå‡æ€§èƒ½ï¼Œå› æ­¤lastatomicä¸ç­‰äº0ä¹Ÿè¡¨ç¤ºåˆ†ä»£
 */
 #define isdecGCmodegen(g)	(g->gckind == KGC_GEN || g->lastatomic != 0)
 
@@ -189,23 +189,25 @@ gc²ÎÊı×ª»»£¬ÔÊĞíÄ³Ğ©²ÎÊı´ïµ½1023£¬µ«ÄÜ´æ´¢µ½Ò»¸öbyteÄÚ
 ** GC cycle on every opportunity)
 */
 /*
-¼ì²éÊÇ·ñ¿ÉÒÔ½øĞĞGC
-1£©GCdebt±ØĞë´óÓÚ0
-2£©´Ëº¯ÊıÓÉÄÚ²¿´¥·¢
+æ£€æŸ¥æ˜¯å¦å¯ä»¥è¿›è¡ŒGC
+1ï¼‰GCdebtå¿…é¡»å¤§äº0
+2ï¼‰æ­¤å‡½æ•°ç”±å†…éƒ¨è§¦å‘
 */
 #define luaC_condGC(L,pre,pos) \
 	{ if (G(L)->GCdebt > 0) { pre; luaC_step(L); pos;}; \
 	  condchangemem(L,pre,pos); }
 
 /* more often than not, 'pre'/'pos' are empty */
-/* ¼ì²éÊÇ·ñ¿ÉÒÔ½øĞĞGC */
+/* æ£€æŸ¥æ˜¯å¦å¯ä»¥è¿›è¡ŒGC */
 #define luaC_checkGC(L)		luaC_condGC(L,(void)0,(void)0)
 
 
+/* å±éšœå‰ç§» é»‘è‰²æŒ‡å‘ç™½è‰²æ—¶ï¼Œç™½è‰²å˜æˆç°è‰²ä»¥ä¸Š */
 #define luaC_barrier(L,p,v) (  \
 	(iscollectable(v) && isblack(p) && iswhite(gcvalue(v))) ?  \
 	luaC_barrier_(L,obj2gco(p),gcvalue(v)) : cast_void(0))
 
+/* å±éšœåç§»ï¼Œé»‘è‰²æŒ‡å‘ç™½è‰²æ—¶ï¼Œé»‘è‰²å˜æˆç°è‰² */
 #define luaC_barrierback(L,p,v) (  \
 	(iscollectable(v) && isblack(p) && iswhite(gcvalue(v))) ? \
 	luaC_barrierback_(L,p) : cast_void(0))

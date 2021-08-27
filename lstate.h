@@ -139,7 +139,7 @@ struct lua_longjmp;  /* defined in ldo.c */
 
 #define BASIC_STACK_SIZE        (2*LUA_MINSTACK)
 
-// ¼ÆËãthreadµÄ¶ÑÕ»Ê¹ÓÃÊýÁ¿
+// è®¡ç®—threadçš„å †æ ˆä½¿ç”¨æ•°é‡
 #define stacksize(th)	cast_int((th)->stack_last - (th)->stack)
 
 
@@ -387,7 +387,7 @@ union GCUnion {
 
 
 /* actual number of total bytes allocated */
-/* ¼ÆËãµ±Ç°ÒÑ¾­·ÖÅäµÄÄÚ´æ×Ü×Ö½ÚÊý */
+/* è®¡ç®—å½“å‰å·²ç»åˆ†é…çš„å†…å­˜æ€»å­—èŠ‚æ•° */
 #define gettotalbytes(g)	cast(lu_mem, (g)->totalbytes + (g)->GCdebt)
 
 LUAI_FUNC void luaE_setdebt (global_State *g, l_mem debt);
