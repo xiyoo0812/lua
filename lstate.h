@@ -139,6 +139,7 @@ struct lua_longjmp;  /* defined in ldo.c */
 
 #define BASIC_STACK_SIZE        (2*LUA_MINSTACK)
 
+// 计算thread的堆栈使用数量
 #define stacksize(th)	cast_int((th)->stack_last - (th)->stack)
 
 

@@ -39,6 +39,7 @@
 #define GCSpause	8
 
 
+// ÅĞ¶ÏÊÇ·ñÔÚsweep½×¶Î
 #define issweepphase(g)  \
 	(GCSswpallgc <= (g)->gcstate && (g)->gcstate <= GCSswpend)
 
