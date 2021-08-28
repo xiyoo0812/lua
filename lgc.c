@@ -32,11 +32,13 @@
 ** (Large enough to dissipate fixed overheads but small enough
 ** to allow small steps for the collector.)
 */
+// 单步GC最多扫描数量
 #define GCSWEEPMAX	100
 
 /*
 ** Maximum number of finalizers to call in each single step.
 */
+// 单步GC最多能调用__gc的数量
 #define GCFINMAX	10
 
 
@@ -1023,7 +1025,7 @@ static void freeobj (lua_State *L, GCObject *o) {
 1）计算当前ow（非白色）和white（白色）
 2）遍历链表p中的前countin个对象
 3）如果当前对象标记死亡，释放改对象
-4）标记改对象
+4）标记该对象
 5）计算标记的对象个数
 */
 static GCObject **sweeplist (lua_State *L, GCObject **p, int countin,
@@ -1208,6 +1210,15 @@ static GCObject **findlast (GCObject **p) {
 ** don't need to be traversed. In incremental mode, 'finobjold1' is NULL,
 ** so the whole list is traversed.)
 */
+/*
+分离tobefnz的对象，将白色对象放到tobefnx
+1）找到tobefnx的最后一个对象lastnext（一定是null）
+2）遍历finobj列表中的未old对象cur
+3）如果cur不是白色，或者不是全部分离，则跳过
+4）如果cur在finobjsur表中，则从finobjsur删除
+5）从finobj中删除cur
+6）将cur放入到tobefnx最后一个元素
+*/
 static void separatetobefnz (global_State *g, int all) {
   GCObject *curr;
   GCObject **p = &g->finobj;
@@ -1231,7 +1242,7 @@ static void separatetobefnz (global_State *g, int all) {
 /*
 ** If pointer 'p' points to 'o', move it to the next element.
 */
-// 如果p指向o, p执行p的next
+// 如果p指向o, p执行p的next，相当于如果o在p的head，删除o对象
 static void checkpointer (GCObject **p, GCObject *o) {
   if (o == *p)
     *p = o->next;
@@ -1242,7 +1253,7 @@ static void checkpointer (GCObject **p, GCObject *o) {
 ** Correct pointers to objects inside 'allgc' list when
 ** object 'o' is being removed from the list.
 */
-// 调整gc的存储链表
+// 删除相关队列中的o对象
 static void correctpointers (global_State *g, GCObject *o) {
   checkpointer(&g->survival, o);
   checkpointer(&g->old1, o);
@@ -1256,6 +1267,15 @@ static void correctpointers (global_State *g, GCObject *o) {
 ** search the list to find it) and link it in 'finobj' list.
 */
 
+/*
+检查userdata的终结器
+1）如果o已经被标记或者没有__gc函数，直接返回
+2）如果在扫描阶段，标记o为白色，并检查sweepgc，找到下一个live对象
+3）不在扫描阶段，从相关队列删除o
+4）从allgc中找到它，并删除
+5）将该对象放进finobj列表
+6）标记o为FINALIZEDBIT
+*/
 void luaC_checkfinalizer (lua_State *L, GCObject *o, Table *mt) {
   global_State *g = G(L);
   if (tofinalize(o) ||                 /* obj. is already marked... */
@@ -1297,6 +1317,15 @@ static void setpause (global_State *g);
 ** are now old---must be in a gray list. Everything else is not in a
 ** gray list. Open upvalues are also kept gray.
 */
+/*
+分代模式扫描对象列表p，然后将所有对象变为old
+1）遍历对象列表p
+2）如果对象是白色，那么是否该对象
+3）如果不是白色，那么标记它的Age为old
+4）如果对象是thread，将他放进grayagain
+5）如果对手是upvalue并且没有关闭，标记为灰色
+6）其他则标记为黑色
+*/
 static void sweep2old (lua_State *L, GCObject **p) {
   GCObject *curr;
   global_State *g = G(L);
@@ -1332,6 +1361,14 @@ static void sweep2old (lua_State *L, GCObject **p) {
 ** here, because these old-generation objects are usually not swept
 ** here.  They will all be advanced in 'correctgraylist'. That function
 ** will also remove objects turned white here from any gray list.
+*/
+/*
+分代模式清理队列p，直到limit对象
+1）遍历队列p，直到遇到limit
+2）如果对象是白色，则释放该对象
+3）如果不是白色，Age为NEW，设置它的age为G_SURVIVAL，并标记为白色
+4）如果不是NEW，则设置age为next age
+5）如果AGE为OLD1，并且pfirstold1为空，则设置pfirstold1
 */
 static GCObject **sweepgen (lua_State *L, global_State *g, GCObject **p,
                             GCObject *limit, GCObject **pfirstold1) {
@@ -1391,6 +1428,15 @@ static void whitelist (global_State *g, GCObject *p) {
 ** Non-white threads also remain on the list; 'TOUCHED2' objects become
 ** regular old; they and anything else are removed from the list.
 */
+/*
+修正灰色列表p
+1）遍历列表p
+2）获取cur对象的gclist
+3）如果是白色，从列表p中删除cur
+4）如果age为G_TOUCHED1，标记为黑色，并设置age为G_TOUCHED2
+5）如果cur是thread，不做任何处理
+6）如果不是thread，标记为黑色，如age为G_TOUCHED2，设置age为OLD
+*/
 static GCObject **correctgraylist (GCObject **p) {
   GCObject *curr;
   while ((curr = *p) != NULL) {
@@ -1424,7 +1470,13 @@ static GCObject **correctgraylist (GCObject **p) {
 /*
 ** Correct all gray lists, coalescing them into 'grayagain'.
 */
-// 修正所有的灰色表，合并到grayagain
+/*
+修正所有的灰色表，合并到grayagain
+1）先修正grayagain
+2）修正weak，合并到grayagain
+3）修正allweak，合并到grayagain
+4）修正ephemeron，合并到grayagain
+*/
 static void correctgraylists (global_State *g) {
   GCObject **list = correctgraylist(&g->grayagain);
   *list = g->weak; g->weak = NULL;
@@ -1465,9 +1517,10 @@ static void markold (global_State *g, GCObject *from, GCObject *to) {
 */
 /*
 结束一次young分代收集
-1）
+1）修正所有的graylist
 2）检查字符串表，看能否收缩
-3）不是紧急gc则处理所有待定的finalizer
+3）设置状态为GCSpropagate
+4）不是紧急gc则处理所有待定的finalizer
 */
 static void finishgencycle (lua_State *L, global_State *g) {
   correctgraylists(g);
@@ -1483,7 +1536,22 @@ static void finishgencycle (lua_State *L, global_State *g) {
 ** atomic step. Then, sweep all lists and advance pointers. Finally,
 ** finish the collection.
 */
-// 执行一次young分代收集
+/*
+执行一次young分代收集
+1）检查本次扫描的firstold1，将firstold1到上次扫描的reallyold之间的对象都标记为old
+2）将finobj到上次扫描的finobjrold之间的对象都标记为old
+3）将所有tobefnz的对象标记为old
+4）执行一次原子处理
+5）进入GCSswpallgc状态
+6）扫描allgc，将所有new对象标记为survival，并记录firstobj对象
+7）扫描survival，将所有survival对象变老一个状态，并记录firstobj对象
+8）更新old1，reallyold，survival链表的位置
+10）扫描finobj，将所有new对象标记为survival，并记录仿firstobj对象dummy
+11）扫描finobjsur，将所有survival对象变老一个状态，并记录仿firstobj对象dummy
+12）更新finobjold1，finobjrold，finobjsur链表的位置
+13）扫描tobefnz
+14）完成一次young分代
+*/
 static void youngcollection (lua_State *L, global_State *g) {
   GCObject **psurvival;  /* to point to first non-dead survival object */
   GCObject *dummy;  /* dummy out parameter to 'sweepgen' */
@@ -1564,6 +1632,10 @@ static void atomic2gen (lua_State *L, global_State *g) {
 /*
 进入分代GC模式
 必须持续一个原子循环确保所有对象都已正确标记，并在表中显示都被清除了，然后将所有对象变为旧对象并完成收集
+1）等待GCSpause准备进入一次新的cycle
+2）等待GCSpropagate
+3）执行atomic标记工作
+4）执行一次原子收集并进入分代模式
 */
 static lu_mem entergen (lua_State *L, global_State *g) {
   lu_mem numobjs;
@@ -1582,8 +1654,12 @@ static lu_mem entergen (lua_State *L, global_State *g) {
 */
 /*
 进入增量GC模式
-标识所有的对象为白色，清空所有的增量GC的列表
-修改类型，并设置为PAUSE状态
+1）标识allgc所有对象为白色
+2）清空reallyold、old1，survival列表
+3）标识finobj所有对象为白色
+4）标识tobefnz所有对象为白色
+5）清空finobjrold、finobjold1，finobjsur列表
+6）进入增量模式，设置为GCSpause状态
 */
 static void enterinc (global_State *g) {
   whitelist(g, g->allgc);
@@ -1600,7 +1676,7 @@ static void enterinc (global_State *g) {
 /*
 ** Change collector mode to 'newmode'.
 */
-// 改变GC模式，默认是INC模式
+// 改变GC模式，初始化是INC模式
 void luaC_changemode (lua_State *L, int newmode) {
   global_State *g = G(L);
   if (newmode != g->gckind) {
@@ -1616,7 +1692,11 @@ void luaC_changemode (lua_State *L, int newmode) {
 /*
 ** Does a full collection in generational mode.
 */
-// 执行一次全量分代GC
+/*
+执行一次全量分代GC
+1）调用enterinc，这里只是利用这个接口标记所有对象的状态
+2）执行entergen，执行分代全量gc
+*/
 static lu_mem fullgen (lua_State *L, global_State *g) {
   enterinc(g);
   return entergen(L, g);
@@ -1818,7 +1898,13 @@ static void deletelist (lua_State *L, GCObject *p, GCObject *limit) {
 ** Call all finalizers of the objects in the given Lua state, and
 ** then free all objects, except for the main thread.
 */
-// 删除所有的对象（除了main thread）
+/*
+删除所有的对象（除了main thread）
+1）切换到INC模式
+2）分离tobefnz对象，将finobj里面的白色放到tobefnz
+3）执行所有的userdata的__gc函数，即清除tobefnz的对象
+4）依次删除allgc，finobj，fixedgc的对象
+*/
 void luaC_freeallobjects (lua_State *L) {
   global_State *g = G(L);
   luaC_changemode(L, KGC_INC);
@@ -1832,6 +1918,24 @@ void luaC_freeallobjects (lua_State *L) {
 }
 
 
+/*
+执行一次原子扫描
+1）设置状态GCSatomic，保存grayagain
+2）标记mainthread、l_registry、全局metatables等全局数据
+3）标记gray列表
+4）重新标记upvalues
+5）将grayagain赋值给gray，再次标记gray列表
+6）集中处理ephemerons
+7）清除weak和allweak中的失效的值
+8）分离finobj列表，将白色对象放入tobefnz
+9）标记tobefnz
+10）再次标记gray列表
+11）集中处理ephemerons
+12）清除ephemeron和allweak中的失效的key
+13）清除weak和allweak中的失效的值
+14）清除字符串缓存中的白色字符串
+15）翻转current_white
+*/
 static lu_mem atomic (lua_State *L) {
   global_State *g = G(L);
   lu_mem work = 0;

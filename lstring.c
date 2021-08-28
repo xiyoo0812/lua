@@ -130,6 +130,8 @@ void luaS_resize (lua_State *L, int nsize) {
 */
 /*
 清除即将被回收的字符串缓存
+1）遍历strcache
+2）如果是白色，用系统固定字符串替换
 */
 void luaS_clearcache (global_State *g) {
   int i, j;

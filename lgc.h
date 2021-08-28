@@ -137,7 +137,7 @@
 1）getage: 返回对象o的age
 2）setage: 设置对象o的age
 3）isold: 对象o的age大于存活都是OLD
-4）changeage: 改变对象o的age
+4）changeage: 如果o的age=f，设置对象o的age为t
 */
 #define getage(o)	((o)->marked & AGEBITS)
 #define setage(o,a)  ((o)->marked = cast_byte(((o)->marked & (~AGEBITS)) | a))
