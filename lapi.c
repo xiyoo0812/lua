@@ -113,7 +113,7 @@ idx大于0
 idx小于0
 则从栈顶位置获取值
 */
-static StkId index2stack (lua_State *L, int idx) {
+l_sinline StkId index2stack (lua_State *L, int idx) {
   CallInfo *ci = L->ci;
   if (idx > 0) {
     StkId o = ci->func + idx;
@@ -277,7 +277,7 @@ LUA_API void lua_closeslot (lua_State *L, int idx) {
 /* 
 反转栈上的元素从from到to
 */
-static void reverse (lua_State *L, StkId from, StkId to) {
+l_sinline void reverse (lua_State *L, StkId from, StkId to) {
   for (; from < to; from++, to--) {
     TValue temp;
     setobj(L, &temp, s2v(from));
@@ -534,7 +534,7 @@ LUA_API lua_CFunction lua_tocfunction (lua_State *L, int idx) {
 }
 
 
-static void *touserdata (const TValue *o) {
+l_sinline void *touserdata (const TValue *o) {
   switch (ttype(o)) {
     case LUA_TUSERDATA: return getudatamem(uvalue(o));
     case LUA_TLIGHTUSERDATA: return pvalue(o);
@@ -763,7 +763,7 @@ LUA_API int lua_pushthread (lua_State *L) {
 获取T的field（k）的值，并压入栈顶
 luaV_fastget成功则直接压入栈顶，否则压入slot（nil）
 */
-static int auxgetstr (lua_State *L, const TValue *t, const char *k) {
+l_sinline int auxgetstr (lua_State *L, const TValue *t, const char *k) {
   const TValue *slot;
   TString *str = luaS_new(L, k);
   if (luaV_fastget(L, t, str, slot, luaH_getstr)) {
@@ -857,7 +857,7 @@ LUA_API int lua_geti (lua_State *L, int idx, lua_Integer n) {
 /*
 完成原始获取操作，并将值压入栈顶
 */
-static int finishrawget (lua_State *L, const TValue *val) {
+l_sinline int finishrawget (lua_State *L, const TValue *val) {
   if (isempty(val))  /* avoid copying empty items to the stack */
     setnilvalue(s2v(L->top));
   else
