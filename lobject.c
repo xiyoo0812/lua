@@ -424,8 +424,12 @@ void luaO_tostring (lua_State *L, TValue *obj) {
 ** ===================================================================
 */
 
-/* size for buffer space used by 'luaO_pushvfstring' */
-#define BUFVFS		200
+/*
+** Size for buffer space used by 'luaO_pushvfstring'. It should be
+** (LUA_IDSIZE + MAXNUMBER2STR) + a minimal space for basic messages,
+** so that 'luaG_addinfo' can work directly on the buffer.
+*/
+#define BUFVFS		(LUA_IDSIZE + MAXNUMBER2STR + 95)
 
 /*
 用于格式化字符串的buff对象
@@ -433,27 +437,33 @@ void luaO_tostring (lua_State *L, TValue *obj) {
 /* buffer used by 'luaO_pushvfstring' */
 typedef struct BuffFS {
   lua_State *L;
-  int pushed;  /* number of string pieces already on the stack */
+  int pushed;  /* true if there is a part of the result on the stack */
   int blen;  /* length of partial string in 'space' */
   char space[BUFVFS];  /* holds last part of the result */
 } BuffFS;
 
 
 /*
-** Push given string to the stack, as part of the buffer, and
-** join the partial strings in the stack into one.
+** Push given string to the stack, as part of the result, and
+** join it to previous partial result if there is one.
+** It may call 'luaV_concat' while using one slot from EXTRA_STACK.
+** This call cannot invoke metamethods, as both operands must be
+** strings. It can, however, raise an error if the result is too
+** long. In that case, 'luaV_concat' frees the extra slot before
+** raising the error.
 */
 /*
 将指定字符串先push到栈上，并记录push的次数（pushed）
 如果push次数大于1，并且栈空间不够，那么将buff已经push到栈上的内容连接（concat）到一起
 */
-static void pushstr (BuffFS *buff, const char *str, size_t l) {
+static void pushstr (BuffFS *buff, const char *str, size_t lstr) {
   lua_State *L = buff->L;
-  setsvalue2s(L, L->top, luaS_newlstr(L, str, l));
-  L->top++;  /* may use one extra slot */
-  buff->pushed++;
-  luaV_concat(L, buff->pushed);  /* join partial results into one */
-  buff->pushed = 1;
+  setsvalue2s(L, L->top, luaS_newlstr(L, str, lstr));
+  L->top++;  /* may use one slot from EXTRA_STACK */
+  if (!buff->pushed)  /* no previous string on the stack? */
+    buff->pushed = 1;  /* now there is one */
+  else  /* join previous string with new one */
+    luaV_concat(L, 2);
 }
 
 
@@ -512,7 +522,7 @@ static void addstr2buff (BuffFS *buff, const char *str, size_t slen) {
 
 
 /*
-** Add a number to the buffer.
+** Add a numeral to the buffer.
 */
 /*
 添加数字到buff中
