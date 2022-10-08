@@ -589,17 +589,17 @@ static void newbox (lua_State *L) {
 
 /*
 ** Compute new size for buffer 'B', enough to accommodate extra 'sz'
-** bytes. (The test for "double is not big enough" also gets the
-** case when the multiplication by 2 overflows.)
+** bytes. (The test for "not big enough" also gets the case when the
+** computation of 'newsize' overflows.)
 */
 /*
 扩展buff指定长度sz，每次扩展按*2扩展，不够则直接扩展sz
 */
 static size_t newbuffsize (luaL_Buffer *B, size_t sz) {
-  size_t newsize = B->size * 2;  /* double buffer size */
+  size_t newsize = (B->size / 2) * 3;  /* buffer size * 1.5 */
   if (l_unlikely(MAX_SIZET - sz < B->n))  /* overflow in (B->n + sz)? */
     return luaL_error(B->L, "buffer too large");
-  if (newsize < B->n + sz)  /* double is not big enough? */
+  if (newsize < B->n + sz)  /* not big enough? */
     newsize = B->n + sz;
   return newsize;
 }
