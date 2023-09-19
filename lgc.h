@@ -211,20 +211,20 @@ gc参数转换，允许某些参数达到1023，但能存储到一个byte内
 /* 检查是否可以进行GC */
 #define luaC_checkGC(L)		luaC_condGC(L,(void)0,(void)0)
 
-
-/* 屏障前移 黑色指向白色时，白色变成灰色以上 */
-#define luaC_barrier(L,p,v) (  \
-	(iscollectable(v) && isblack(p) && iswhite(gcvalue(v))) ?  \
-	luaC_barrier_(L,obj2gco(p),gcvalue(v)) : cast_void(0))
-
-/* 屏障后移，黑色指向白色时，黑色变成灰色 */
-#define luaC_barrierback(L,p,v) (  \
-	(iscollectable(v) && isblack(p) && iswhite(gcvalue(v))) ? \
-	luaC_barrierback_(L,p) : cast_void(0))
-
 #define luaC_objbarrier(L,p,o) (  \
 	(isblack(p) && iswhite(o)) ? \
 	luaC_barrier_(L,obj2gco(p),obj2gco(o)) : cast_void(0))
+
+/* 屏障前移 黑色指向白色时，白色变成灰色以上 */
+#define luaC_barrier(L,p,v) (  \
+	iscollectable(v) ? luaC_objbarrier(L,p,gcvalue(v)) : cast_void(0))
+
+/* 屏障后移，黑色指向白色时，黑色变成灰色 */
+#define luaC_objbarrierback(L,p,o) (  \
+	(isblack(p) && iswhite(o)) ? luaC_barrierback_(L,p) : cast_void(0))
+
+#define luaC_barrierback(L,p,v) (  \
+	iscollectable(v) ? luaC_objbarrierback(L, p, gcvalue(v)) : cast_void(0))
 
 LUAI_FUNC void luaC_fix (lua_State *L, GCObject *o);
 LUAI_FUNC void luaC_freeallobjects (lua_State *L);

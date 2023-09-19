@@ -393,7 +393,7 @@ typedef struct GCObject {
 typedef struct TString {
   CommonHeader;
   lu_byte extra;  /* reserved words for short strings; "has hash" for longs */
-  lu_byte shrlen;  /* length for short strings */
+  lu_byte shrlen;  /* length for short strings, 0xFF for long strings */
   unsigned int hash;
   union {
     size_t lnglen;  /* length for long strings */
@@ -403,34 +403,24 @@ typedef struct TString {
 } TString;
 
 
-
-/*
-** Get the actual string (array of bytes) from a 'TString'.
-*/
 /*
 返回TString的真实字符串地址
 */
-
-#define getstr(ts)  ((ts)->contents)
-
-
 /*
-TValue转换成TString
+** Get the actual string (array of bytes) from a 'TString'. (Generic
+** version and specialized versions for long and short strings.)
 */
-/* get the actual string (array of bytes) from a Lua value */
-#define svalue(o)       getstr(tsvalue(o))
+#define getstr(ts)	((ts)->contents)
+#define getlngstr(ts)	check_exp((ts)->shrlen == 0xFF, (ts)->contents)
+#define getshrstr(ts)	check_exp((ts)->shrlen != 0xFF, (ts)->contents)
+
 
 /*
 返回ts的长度len
 */
 /* get string length from 'TString *s' */
-#define tsslen(s)	((s)->tt == LUA_VSHRSTR ? (s)->shrlen : (s)->u.lnglen)
-
-/*
-返回tvalue的长度len
-*/
-/* get string length from 'TValue *o' */
-#define vslen(o)	tsslen(tsvalue(o))
+#define tsslen(s)  \
+	((s)->shrlen != 0xFF ? (s)->shrlen : (s)->u.lnglen)
 
 /* }================================================================== */
 
