@@ -19,6 +19,12 @@
 /*
 ** Extra types for collectable non-values
 */
+/*
+lua扩展类型
+LUA_TUPVAL: upvalue
+LUA_TPROTO: 函数原型
+LUA_TDEADKEY: 表的死键
+*/
 #define LUA_TUPVAL	LUA_NUMTYPES  /* upvalues */
 #define LUA_TPROTO	(LUA_NUMTYPES+1)  /* function prototypes */
 #define LUA_TDEADKEY	(LUA_NUMTYPES+2)  /* removed keys in tables */
@@ -225,6 +231,7 @@ typedef union {
 ** (In any definition, values associated with absent keys must also
 ** be accepted as empty.)
 */
+/* 判断一个value是否nil */
 #define isempty(v)		ttisnil(v)
 
 
@@ -419,6 +426,9 @@ typedef struct TString {
 
 
 /*
+返回TString的真实字符串地址
+*/
+/*
 ** Get the actual string (array of bytes) from a 'TString'. (Generic
 ** version and specialized versions for long and short strings.)
 */
@@ -428,6 +438,9 @@ typedef struct TString {
 #define getstr(ts) 	(strisshr(ts) ? rawgetshrstr(ts) : (ts)->contents)
 
 
+/*
+返回ts的长度len
+*/
 /* get string length from 'TString *ts' */
 #define tsslen(ts)  \
 	(strisshr(ts) ? cast_uint((ts)->shrlen) : (ts)->u.lnglen)
@@ -811,6 +824,12 @@ typedef struct Table {
 ** gcvalue. This distinguishes them from regular keys but allows them to
 ** be found when searched in a special way. ('next' needs that to find
 ** keys removed from a table during a traversal.)
+*/
+/*
+表中的死键具有标记DEADKEY，但保留其原始值，这将它们与常规键区别开来
+但允许在以特殊方式搜索时找到它们（next需要在遍历过程中找到从表中移除的键。）
+setdeadkey: 设置LUA_TDEADKEY
+keyisdead: 判断LUA_TDEADKEY
 */
 #define setdeadkey(node)	(keytt(node) = LUA_TDEADKEY)
 #define keyisdead(node)		(keytt(node) == LUA_TDEADKEY)

@@ -20,6 +20,9 @@
 
 
 /*
+计算指定长度的string对象的size
+*/
+/*
 ** Size of a short TString: Size of the header plus space for the string
 ** itself (including final '\0').
 */
@@ -27,6 +30,9 @@
 	(offsetof(TString, contents) + ((l) + 1) * sizeof(char))
 
 
+/*
+根据传入的s创建一个字符串对象
+*/
 #define luaS_newliteral(L, s)	(luaS_newlstr(L, "" s, \
                                  (sizeof(s)/sizeof(char))-1))
 

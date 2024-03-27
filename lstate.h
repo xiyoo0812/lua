@@ -148,6 +148,7 @@ struct lua_longjmp;  /* defined in ldo.c */
 
 #define BASIC_STACK_SIZE        (2*LUA_MINSTACK)
 
+// 计算thread的堆栈使用数量
 #define stacksize(th)	cast_int((th)->stack_last.p - (th)->stack.p)
 
 
@@ -392,6 +393,7 @@ union GCUnion {
 #define obj2gco(v)	check_exp((v)->tt >= LUA_TSTRING, &(cast_u(v)->gc))
 
 
+/* 计算当前已经分配的内存总字节数 */
 /* actual number of total objects allocated */
 #define gettotalobjs(g)	((g)->totalobjs - (g)->GCdebt)
 

@@ -1,4 +1,4 @@
-/*
+﻿/*
 ** $Id: lauxlib.c $
 ** Auxiliary functions for building Lua libraries
 ** See Copyright Notice in lua.h
@@ -172,6 +172,9 @@ LUALIB_API void luaL_traceback (lua_State *L, lua_State *L1,
 ** =======================================================
 */
 
+/*
+参数错误
+*/
 LUALIB_API int luaL_argerror (lua_State *L, int arg, const char *extramsg) {
   lua_Debug ar;
   if (!lua_getstack(L, 0, &ar))  /* no stack frame? */
@@ -190,6 +193,9 @@ LUALIB_API int luaL_argerror (lua_State *L, int arg, const char *extramsg) {
 }
 
 
+/*
+类型（名称）错误
+*/
 LUALIB_API int luaL_typeerror (lua_State *L, int arg, const char *tname) {
   const char *msg;
   const char *typearg;  /* name for the type of the actual argument */
@@ -204,6 +210,9 @@ LUALIB_API int luaL_typeerror (lua_State *L, int arg, const char *tname) {
 }
 
 
+/*
+类型（枚举）错误
+*/
 static void tag_error (lua_State *L, int arg, int tag) {
   luaL_typeerror(L, arg, lua_typename(L, tag));
 }
@@ -212,6 +221,9 @@ static void tag_error (lua_State *L, int arg, int tag) {
 /*
 ** The use of 'lua_pushfstring' ensures this function does not
 ** need reserved stack space when called.
+*/
+/*
+将代码执行的文件和行数信息压到栈顶
 */
 LUALIB_API void luaL_where (lua_State *L, int level) {
   lua_Debug ar;
@@ -231,6 +243,9 @@ LUALIB_API void luaL_where (lua_State *L, int level) {
 ** not need reserved stack space when called. (At worst, it generates
 ** an error with "stack overflow" instead of the given message.)
 */
+/*
+处理lua错误信息
+*/
 LUALIB_API int luaL_error (lua_State *L, const char *fmt, ...) {
   va_list argp;
   va_start(argp, fmt);
@@ -242,6 +257,9 @@ LUALIB_API int luaL_error (lua_State *L, const char *fmt, ...) {
 }
 
 
+/*
+返回文件操作结果给lua，成功返回true，失败返回nil, err_string, err_code
+*/
 LUALIB_API int luaL_fileresult (lua_State *L, int stat, const char *fname) {
   int en = errno;  /* calls to Lua API may change this value */
   if (stat) {
@@ -282,6 +300,9 @@ LUALIB_API int luaL_fileresult (lua_State *L, int stat, const char *fname) {
 #endif				/* } */
 
 
+/*
+返回函数执行结果给lua，成功返回true，失败返回nil, err_string, err_code
+*/
 LUALIB_API int luaL_execresult (lua_State *L, int stat) {
   if (stat != 0 && errno != 0)  /* error with an 'errno'? */
     return luaL_fileresult(L, 0, NULL);
@@ -357,6 +378,9 @@ LUALIB_API void *luaL_checkudata (lua_State *L, int ud, const char *tname) {
 ** =======================================================
 */
 
+/*
+返回arg位置的字符串在opt_list（选项列表）中的位置（枚举值）
+*/
 LUALIB_API int luaL_checkoption (lua_State *L, int arg, const char *def,
                                  const char *const lst[]) {
   const char *name = (def) ? luaL_optstring(L, arg, def) :
@@ -377,6 +401,9 @@ LUALIB_API int luaL_checkoption (lua_State *L, int arg, const char *def,
 ** this extra space, Lua will generate the same 'stack overflow' error,
 ** but without 'msg'.)
 */
+/*
+检测lua栈空间能否扩展space
+*/
 LUALIB_API void luaL_checkstack (lua_State *L, int space, const char *msg) {
   if (l_unlikely(!lua_checkstack(L, space))) {
     if (msg)
@@ -387,18 +414,27 @@ LUALIB_API void luaL_checkstack (lua_State *L, int space, const char *msg) {
 }
 
 
+/*
+检查arg位置value的类型是否t
+*/
 LUALIB_API void luaL_checktype (lua_State *L, int arg, int t) {
   if (l_unlikely(lua_type(L, arg) != t))
     tag_error(L, arg, t);
 }
 
 
+/*
+检查arg位置value的类型不为空
+*/
 LUALIB_API void luaL_checkany (lua_State *L, int arg) {
   if (l_unlikely(lua_type(L, arg) == LUA_TNONE))
     luaL_argerror(L, arg, "value expected");
 }
 
 
+/*
+检查arg位置value的类型是否字符串，如果是那么返回字符串
+*/
 LUALIB_API const char *luaL_checklstring (lua_State *L, int arg, size_t *len) {
   const char *s = lua_tolstring(L, arg, len);
   if (l_unlikely(!s)) tag_error(L, arg, LUA_TSTRING);
@@ -406,6 +442,9 @@ LUALIB_API const char *luaL_checklstring (lua_State *L, int arg, size_t *len) {
 }
 
 
+/*
+带默认值的checklstring，如果arg位置为空，那么返回默认值def
+*/
 LUALIB_API const char *luaL_optlstring (lua_State *L, int arg,
                                         const char *def, size_t *len) {
   if (lua_isnoneornil(L, arg)) {
@@ -417,6 +456,9 @@ LUALIB_API const char *luaL_optlstring (lua_State *L, int arg,
 }
 
 
+/*
+检查arg位置value的类型是否number，如果是那么返回number
+*/
 LUALIB_API lua_Number luaL_checknumber (lua_State *L, int arg) {
   int isnum;
   lua_Number d = lua_tonumberx(L, arg, &isnum);
@@ -426,6 +468,9 @@ LUALIB_API lua_Number luaL_checknumber (lua_State *L, int arg) {
 }
 
 
+/*
+带默认值的checknumber，如果arg位置为空，那么返回默认值def
+*/
 LUALIB_API lua_Number luaL_optnumber (lua_State *L, int arg, lua_Number def) {
   return luaL_opt(L, luaL_checknumber, arg, def);
 }
@@ -439,6 +484,9 @@ static void interror (lua_State *L, int arg) {
 }
 
 
+/*
+检查arg位置value的类型是否integer，如果是那么返回integer
+*/
 LUALIB_API lua_Integer luaL_checkinteger (lua_State *L, int arg) {
   int isnum;
   lua_Integer d = lua_tointegerx(L, arg, &isnum);
@@ -449,6 +497,9 @@ LUALIB_API lua_Integer luaL_checkinteger (lua_State *L, int arg) {
 }
 
 
+/*
+带默认值的checkinteger，如果arg位置为空，那么返回默认值def
+*/
 LUALIB_API lua_Integer luaL_optinteger (lua_State *L, int arg,
                                                       lua_Integer def) {
   return luaL_opt(L, luaL_checkinteger, arg, def);
@@ -469,7 +520,9 @@ typedef struct UBox {
   size_t bsize;
 } UBox;
 
-
+/*
+重置栈上idx处ubox的size
+*/
 /* Resize the buffer used by a box. Optimize for the common case of
 ** resizing to the old size. (For instance, __gc will resize the box
 ** to 0 even after it was closed. 'pushresult' may also resize it to a
@@ -494,12 +547,18 @@ static void *resizebox (lua_State *L, int idx, size_t newsize) {
 }
 
 
+/*
+ubox析构
+*/
 static int boxgc (lua_State *L) {
   resizebox(L, 1, 0);
   return 0;
 }
 
 
+/*
+ubox元表
+*/
 static const luaL_Reg boxmt[] = {  /* box metamethods */
   {"__gc", boxgc},
   {"__close", boxgc},
@@ -507,6 +566,9 @@ static const luaL_Reg boxmt[] = {  /* box metamethods */
 };
 
 
+/*
+新建一个ubox对象，并设置元表
+*/
 static void newbox (lua_State *L) {
   UBox *box = (UBox *)lua_newuserdatauv(L, sizeof(UBox), 0);
   box->box = NULL;
@@ -538,6 +600,9 @@ static void newbox (lua_State *L) {
 ** bytes plus one for a terminating zero. (The test for "not big enough"
 ** also gets the case when the computation of 'newsize' overflows.)
 */
+/*
+扩展buff指定长度sz，每次扩展按*2扩展，不够则直接扩展sz
+*/
 static size_t newbuffsize (luaL_Buffer *B, size_t sz) {
   size_t newsize = (B->size / 2) * 3;  /* buffer size * 1.5 */
   if (l_unlikely(MAX_SIZET - sz - 1 < B->n))  /* overflow in (B->n + sz + 1)? */
@@ -552,6 +617,10 @@ static size_t newbuffsize (luaL_Buffer *B, size_t sz) {
 ** Returns a pointer to a free area with at least 'sz' bytes in buffer
 ** 'B'. 'boxidx' is the relative position in the stack where is the
 ** buffer's box or its placeholder.
+*/
+/*
+返回从buff中预分配指定长度sz的可写空间
+空间不足时重新分配
 */
 static char *prepbuffsize (luaL_Buffer *B, size_t sz, int boxidx) {
   checkbufferlevel(B, boxidx);
@@ -581,11 +650,17 @@ static char *prepbuffsize (luaL_Buffer *B, size_t sz, int boxidx) {
 /*
 ** returns a pointer to a free area with at least 'sz' bytes
 */
+/*
+返回从buff中预分配size长度的空间
+*/
 LUALIB_API char *luaL_prepbuffsize (luaL_Buffer *B, size_t sz) {
   return prepbuffsize(B, sz, -1);
 }
 
 
+/*
+添加指定长度l的字符串s到buff中
+*/
 LUALIB_API void luaL_addlstring (luaL_Buffer *B, const char *s, size_t l) {
   if (l > 0) {  /* avoid 'memcpy' when 's' can be NULL */
     char *b = prepbuffsize(B, l, -1);
@@ -595,11 +670,19 @@ LUALIB_API void luaL_addlstring (luaL_Buffer *B, const char *s, size_t l) {
 }
 
 
+/*
+添加字符串s(以\0结束)到buff中
+*/
 LUALIB_API void luaL_addstring (luaL_Buffer *B, const char *s) {
   luaL_addlstring(B, s, strlen(s));
 }
 
 
+/*
+将buff内容以字符串方式压入栈顶
+如果buff也在栈上，将string移到前面，将buff之上的出栈
+之所以pop2，是因为buff入栈时，先压入了一个nil方便返回
+*/
 LUALIB_API void luaL_pushresult (luaL_Buffer *B) {
   lua_State *L = B->L;
   checkbufferlevel(B, -1);
@@ -623,6 +706,9 @@ LUALIB_API void luaL_pushresult (luaL_Buffer *B) {
 }
 
 
+/*
+将buff延长sz，然后将buff内容以字符串方式压入栈顶
+*/
 LUALIB_API void luaL_pushresultsize (luaL_Buffer *B, size_t sz) {
   luaL_addsize(B, sz);
   luaL_pushresult(B);
@@ -638,6 +724,11 @@ LUALIB_API void luaL_pushresultsize (luaL_Buffer *B, size_t sz) {
 ** trigger an emergency GC, so we should not remove the string from the
 ** stack before we have the space guaranteed.)
 */
+/*
+将栈顶参数附加到buff中
+prepbuffsize -2是指box的索引
+-1 string -2 box -3 nil（res）
+*/
 LUALIB_API void luaL_addvalue (luaL_Buffer *B) {
   lua_State *L = B->L;
   size_t len;
@@ -649,6 +740,9 @@ LUALIB_API void luaL_addvalue (luaL_Buffer *B) {
 }
 
 
+/*
+初始化luabuff
+*/
 LUALIB_API void luaL_buffinit (lua_State *L, luaL_Buffer *B) {
   B->L = L;
   B->b = B->init.b;
@@ -658,6 +752,9 @@ LUALIB_API void luaL_buffinit (lua_State *L, luaL_Buffer *B) {
 }
 
 
+/*
+初始化luabuff，并返回预分配size长度的空间
+*/
 LUALIB_API char *luaL_buffinitsize (lua_State *L, luaL_Buffer *B, size_t sz) {
   luaL_buffinit(L, B);
   return prepbuffsize(B, sz, -1);
@@ -749,6 +846,11 @@ static const char *getF (lua_State *L, void *ud, size_t *size) {
 }
 
 
+/*
+* what: 文件操作类型
+* 生成文件操作错误信息
+* 将错误信息压到传入的fnameidx位置
+*/
 static int errfile (lua_State *L, const char *what, int fnameindex) {
   const char *serr = strerror(errno);
   const char *filename = lua_tostring(L, fnameindex) + 1;
@@ -759,10 +861,13 @@ static int errfile (lua_State *L, const char *what, int fnameindex) {
 
 
 /*
-** Skip an optional BOM at the start of a stream. If there is an
+** start of a stream. If there is an
 ** incomplete BOM (the first character is correct but the rest is
 ** not), returns the first character anyway to force an error
 ** (as no chunk can start with 0xEF).
+*/
+/*
+* UTF-8 带BOM格式的文件跳过文件开头的BOM标记
 */
 static int skipBOM (FILE *f) {
   int c = getc(f);  /* read first character */
@@ -780,8 +885,12 @@ static int skipBOM (FILE *f) {
 ** first "valid" character of the file (after the optional BOM and
 ** a first-line comment).
 */
-static int skipcomment (FILE *f, int *cp) {
-  int c = *cp = skipBOM(f);
+/*
+* 1、跳过UTF-8的BOM标识
+* 2、跳过首行#为首的注释
+*/
+static int skipcomment (LoadF *lf, int *cp) {
+  int c = *cp = skipBOM(lf);
   if (c == '#') {  /* first line is a comment (Unix exec. file)? */
     do {  /* skip first line */
       c = getc(f);
@@ -793,6 +902,14 @@ static int skipcomment (FILE *f, int *cp) {
 }
 
 
+/*
+* 加载lua文件实现
+* 1、文件名为空则表示从stdin读取
+* 2、先以普通r模式open，如果是二进制文件，则以rb模式reopen
+* 4、加载失败栈顶为错误信息
+* 3、加载成功栈顶为loadfunc
+* 5、返回加载状态status
+*/
 LUALIB_API int luaL_loadfilex (lua_State *L, const char *filename,
                                              const char *mode) {
   LoadF lf;
@@ -892,6 +1009,9 @@ LUALIB_API int luaL_callmeta (lua_State *L, int obj, const char *event) {
 }
 
 
+/*
+查询obj的长度
+*/
 LUALIB_API lua_Integer luaL_len (lua_State *L, int idx) {
   lua_Integer l;
   int isnum;
@@ -1009,6 +1129,9 @@ LUALIB_API void luaL_requiref (lua_State *L, const char *modname,
 }
 
 
+/*
+将字符串s中的所有p换成r，并将结果保存到buff（b）
+*/
 LUALIB_API void luaL_addgsub (luaL_Buffer *b, const char *s,
                                      const char *p, const char *r) {
   const char *wild;
@@ -1022,6 +1145,9 @@ LUALIB_API void luaL_addgsub (luaL_Buffer *b, const char *s,
 }
 
 
+/*
+将字符串s中的所有p换成r，并将结果压倒栈顶
+*/
 LUALIB_API const char *luaL_gsub (lua_State *L, const char *s,
                                   const char *p, const char *r) {
   luaL_Buffer b;
@@ -1032,6 +1158,12 @@ LUALIB_API const char *luaL_gsub (lua_State *L, const char *s,
 }
 
 
+/*
+默认内存分配函数
+nsize为0，则是释放ptr
+realloc: 如果nsize>osize，判断pr是否有足够的连续空间，如有则在ptr上扩展
+否则新分配空间，copy内容后，释放原地址，最后返回新地址
+*/
 static void *l_alloc (void *ud, void *ptr, size_t osize, size_t nsize) {
   (void)ud; (void)osize;  /* not used */
   if (nsize == 0) {
@@ -1043,6 +1175,9 @@ static void *l_alloc (void *ud, void *ptr, size_t osize, size_t nsize) {
 }
 
 
+/*
+默认panic处理函数
+*/
 /*
 ** Standard panic funcion just prints an error message. The test
 ** with 'lua_type' avoids possible memory errors in 'lua_tostring'.
@@ -1162,7 +1297,9 @@ LUALIB_API unsigned int luaL_makeseed (lua_State *L) {
   return luai_makeseed();
 }
 
-
+/*
+新建一个luastate
+*/
 LUALIB_API lua_State *luaL_newstate (void) {
   lua_State *L = lua_newstate(l_alloc, NULL, luai_makeseed());
   if (l_likely(L)) {

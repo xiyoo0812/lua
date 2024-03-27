@@ -1,4 +1,4 @@
-/*
+﻿/*
 ** $Id: lmem.h $
 ** Interface to Memory Manager
 ** See Copyright Notice in lua.h
@@ -28,9 +28,15 @@
 ** false due to limited range of data type"; the +1 tricks the compiler,
 ** avoiding this warning but also this optimization.)
 */
+/*
+测试n个长度的e是否超过限制
+*/
 #define luaM_testsize(n,e)  \
 	(sizeof(n) >= sizeof(size_t) && cast_sizet((n)) + 1 > MAX_SIZET/(e))
 
+/*
+检测分配n个e是否超过内存限制
+*/
 #define luaM_checksize(L,n,e)  \
 	(luaM_testsize(n,e) ? luaM_toobig(L) : cast_void(0))
 
@@ -49,13 +55,22 @@
 /*
 ** Arrays of chars do not need any test
 */
+/*
+重新分配char数组指定长度n
+*/
 #define luaM_reallocvchar(L,b,on,n)  \
   cast_charp(luaM_saferealloc_(L, (b), (on)*sizeof(char), (n)*sizeof(char)))
 
+/*
+释放指定结构b或者数组b长度n的内存
+*/
 #define luaM_freemem(L, b, s)	luaM_free_(L, (b), (s))
 #define luaM_free(L, b)		luaM_free_(L, (b), sizeof(*(b)))
 #define luaM_freearray(L, b, n)   luaM_free_(L, (b), (n)*sizeof(*(b)))
 
+/*
+分配指定类型t或者类型t数组的内存
+*/
 #define luaM_new(L,t)		cast(t*, luaM_malloc_(L, sizeof(t), 0))
 #define luaM_newvector(L,n,t)	cast(t*, luaM_malloc_(L, (n)*sizeof(t), 0))
 #define luaM_newvectorchecked(L,n,t) \
@@ -65,14 +80,23 @@
 
 #define luaM_newblock(L, size)	luaM_newvector(L, size, char)
 
+/*
+增加一个指定类型t数组的内存
+*/
 #define luaM_growvector(L,v,nelems,size,t,limit,e) \
 	((v)=cast(t *, luaM_growaux_(L,v,nelems,&(size),sizeof(t), \
                          luaM_limitN(limit,t),e)))
 
+/*
+重新分配一个指定类型t数组的内存
+*/
 #define luaM_reallocvector(L, v,oldn,n,t) \
    (cast(t *, luaM_realloc_(L, v, cast_sizet(oldn) * sizeof(t), \
                                   cast_sizet(n) * sizeof(t))))
 
+/*
+缩小一个指定类型t数组的内存
+*/
 #define luaM_shrinkvector(L,v,size,fs,t) \
    ((v)=cast(t *, luaM_shrinkvector_(L, v, &(size), fs, sizeof(t))))
 

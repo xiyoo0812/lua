@@ -1,4 +1,4 @@
-/*
+﻿/*
 ** $Id: ltable.c $
 ** Lua tables (hash)
 ** See Copyright Notice in lua.h
@@ -345,6 +345,9 @@ static const TValue *getgeneric (Table *t, const TValue *key, int deadok) {
 ** returns the index for 'k' if 'k' is an appropriate key to live in
 ** the array part of a table, 0 otherwise.
 */
+/*
+将table的key转换成数组index
+*/
 static unsigned int arrayindex (lua_Integer k) {
   if (l_castS2U(k) - 1u < MAXASIZE)  /* 'k' in [1, MAXASIZE]? */
     return cast_uint(k);  /* 'key' is an appropriate array index */
@@ -353,6 +356,9 @@ static unsigned int arrayindex (lua_Integer k) {
 }
 
 
+/*
+查找table数据结构中key对应的index值
+*/
 /*
 ** returns the index of a 'key' for table traversals. First goes all
 ** elements in the array part, then elements in the hash part. The
@@ -376,6 +382,11 @@ static unsigned findindex (lua_State *L, Table *t, TValue *key,
 }
 
 
+/*
+查询表T在迭代中是否还有下一个元素
+如果有则将index值压到索引key位置
+并将value设置到索引key+1位置
+*/
 int luaH_next (lua_State *L, Table *t, StkId key) {
   unsigned int asize = luaH_realasize(t);
   unsigned int i = findindex(L, t, s2v(key), asize);  /* find original key */

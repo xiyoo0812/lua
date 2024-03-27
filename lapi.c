@@ -1,4 +1,4 @@
-/*
+﻿/*
 ** $Id: lapi.c $
 ** Lua API
 ** See Copyright Notice in lua.h
@@ -47,9 +47,17 @@ const char lua_ident[] =
 
 
 /* test for pseudo index */
+/*
+* 判断i是否伪索引
+* 伪索引除了他对应的值不在栈中之外，其他都类似于栈中的索引。
+*/
 #define ispseudo(i)		((i) <= LUA_REGISTRYINDEX)
 
 /* test for upvalue */
+/* 
+* 判断i是否updalue索引
+* upvalue的索引小于注册表索引，且为负数，即LUA_REGISTRYINDEX - idx
+*/
 #define isupvalue(i)		((i) < LUA_REGISTRYINDEX)
 
 
@@ -66,6 +74,15 @@ static void advancegc (lua_State *L, size_t delta) {
 /*
 ** Convert an acceptable index to a pointer to its respective value.
 ** Non-valid indices return the special nil value 'G(L)->nilvalue'.
+*/
+/*
+获取栈索引位置对应的值
+idx大于0
+则从栈底(函数调用栈位置)获取值
+idx小于0
+正常: 则从栈顶位置获取值
+registry: 返回registry
+upvalue： 返回updalue值
 */
 static TValue *index2value (lua_State *L, int idx) {
   CallInfo *ci = L->ci;
@@ -97,12 +114,18 @@ static TValue *index2value (lua_State *L, int idx) {
   }
 }
 
-
-
 /*
 ** Convert a valid actual index (not a pseudo-index) to its address.
 */
 static StkId index2stack (lua_State *L, int idx) {
+/*
+将栈索引转换成栈对象
+idx大于0
+则从栈底(函数调用栈位置)获取值
+idx小于0
+则从栈顶位置获取值
+*/
+l_sinline StkId index2stack (lua_State *L, int idx) {
   CallInfo *ci = L->ci;
   if (idx > 0) {
     StkId o = ci->func.p + idx;
@@ -118,6 +141,9 @@ static StkId index2stack (lua_State *L, int idx) {
 }
 
 
+/*
+检测lua栈空间能否扩展n
+*/
 LUA_API int lua_checkstack (lua_State *L, int n) {
   int res;
   CallInfo *ci;
@@ -135,6 +161,9 @@ LUA_API int lua_checkstack (lua_State *L, int n) {
 }
 
 
+/*
+从from（L1）剪切n个栈数据到to（L2）
+*/
 LUA_API void lua_xmove (lua_State *from, lua_State *to, int n) {
   int i;
   if (from == to) return;
@@ -151,6 +180,9 @@ LUA_API void lua_xmove (lua_State *from, lua_State *to, int n) {
 }
 
 
+/*
+设置一个新的panic函数，用于捕捉程序panic
+*/
 LUA_API lua_CFunction lua_atpanic (lua_State *L, lua_CFunction panicf) {
   lua_CFunction old;
   lua_lock(L);
@@ -161,6 +193,9 @@ LUA_API lua_CFunction lua_atpanic (lua_State *L, lua_CFunction panicf) {
 }
 
 
+/*
+返回lua版本信息
+*/
 LUA_API lua_Number lua_version (lua_State *L) {
   UNUSED(L);
   return LUA_VERSION_NUM;
@@ -176,6 +211,9 @@ LUA_API lua_Number lua_version (lua_State *L) {
 /*
 ** convert an acceptable stack index into an absolute index
 */
+/*
+返回lua栈索引的绝对值，即从栈底计算的索引值
+*/
 LUA_API int lua_absindex (lua_State *L, int idx) {
   return (idx > 0 || ispseudo(idx))
          ? idx
@@ -183,11 +221,20 @@ LUA_API int lua_absindex (lua_State *L, int idx) {
 }
 
 
+/*
+返回栈顶元素的index，同时也是栈中元素的个数
+*/
 LUA_API int lua_gettop (lua_State *L) {
   return cast_int(L->top.p - (L->ci->func.p + 1));
 }
 
 
+/*
+设置栈顶到指定索引
+如果新栈顶比现栈顶高，那么需要clear原栈顶上的元素（如果没有开启断言）
+如果有需要关闭的函数，那么关闭函数
+此函数在index超出范围的时候会触发断言（如果开启断言）
+*/
 LUA_API void lua_settop (lua_State *L, int idx) {
   CallInfo *ci;
   StkId func, newtop;
@@ -227,6 +274,9 @@ LUA_API void lua_closeslot (lua_State *L, int idx) {
 }
 
 
+/* 
+反转栈上的元素从from到to
+*/
 /*
 ** Reverse the stack segment from 'from' to 'to'
 ** (auxiliary to 'lua_rotate')
@@ -247,6 +297,12 @@ static void reverse (lua_State *L, StkId from, StkId to) {
 ** Let x = AB, where A is a prefix of length 'n'. Then,
 ** rotate x n == BA. But BA == (A^r . B^r)^r.
 */
+/*
+* 旋转的定义其实就是栈上移和下移，n的符号为正表示上移，为负表示下移，n表示移动步数
+* 具体算法：反转栈上两段（t,m = m,idx）参数，以n为中心，然后再全部反转
+* (t)top <-> (m)mid <-> p(pos)
+* rotate(123456, 4) => 4321 65 => 56 1234
+*/
 LUA_API void lua_rotate (lua_State *L, int idx, int n) {
   StkId p, t, m;
   lua_lock(L);
@@ -262,6 +318,9 @@ LUA_API void lua_rotate (lua_State *L, int idx, int n) {
 }
 
 
+/* 
+把from位置的值copy到to位置，如果是upvalue，还需要修改fr变量的gc机制
+*/
 LUA_API void lua_copy (lua_State *L, int fromidx, int toidx) {
   TValue *fr, *to;
   lua_lock(L);
@@ -277,6 +336,9 @@ LUA_API void lua_copy (lua_State *L, int fromidx, int toidx) {
 }
 
 
+/*
+将指定idx位置的value压到栈顶
+*/
 LUA_API void lua_pushvalue (lua_State *L, int idx) {
   lua_lock(L);
   setobj2s(L, L->top.p, index2value(L, idx));
@@ -291,12 +353,18 @@ LUA_API void lua_pushvalue (lua_State *L, int idx) {
 */
 
 
+/*
+返回指定idx位置value的type
+*/
 LUA_API int lua_type (lua_State *L, int idx) {
   const TValue *o = index2value(L, idx);
   return (isvalid(L, o) ? ttype(o) : LUA_TNONE);
 }
 
 
+/*
+返回指定idx位置value的type名称
+*/
 LUA_API const char *lua_typename (lua_State *L, int t) {
   UNUSED(L);
   api_check(L, LUA_TNONE <= t && t < LUA_NUMTYPES, "invalid type");
@@ -304,18 +372,27 @@ LUA_API const char *lua_typename (lua_State *L, int t) {
 }
 
 
+/*
+判断指定idx位置的value是否函数
+*/
 LUA_API int lua_iscfunction (lua_State *L, int idx) {
   const TValue *o = index2value(L, idx);
   return (ttislcf(o) || (ttisCclosure(o)));
 }
 
 
+/*
+判断指定idx位置的value是否整数
+*/
 LUA_API int lua_isinteger (lua_State *L, int idx) {
   const TValue *o = index2value(L, idx);
   return ttisinteger(o);
 }
 
 
+/*
+判断指定idx位置的value是否数字
+*/
 LUA_API int lua_isnumber (lua_State *L, int idx) {
   lua_Number n;
   const TValue *o = index2value(L, idx);
@@ -323,12 +400,19 @@ LUA_API int lua_isnumber (lua_State *L, int idx) {
 }
 
 
+/*
+判断指定idx位置的value是否字符串
+包括string和可以转车工string的number
+*/
 LUA_API int lua_isstring (lua_State *L, int idx) {
   const TValue *o = index2value(L, idx);
   return (ttisstring(o) || cvt2str(o));
 }
 
 
+/*
+判断指定idx位置的value是否userdata
+*/
 LUA_API int lua_isuserdata (lua_State *L, int idx) {
   const TValue *o = index2value(L, idx);
   return (ttisfulluserdata(o) || ttislightuserdata(o));
@@ -358,6 +442,9 @@ LUA_API void lua_arith (lua_State *L, int op) {
 }
 
 
+/*
+按照op（==><）定义的操作比较栈上a和b两个索引的值
+*/
 LUA_API int lua_compare (lua_State *L, int index1, int index2, int op) {
   const TValue *o1;
   const TValue *o2;
@@ -505,6 +592,9 @@ LUA_API const void *lua_topointer (lua_State *L, int idx) {
 */
 
 
+/*
+压入nil到栈顶
+*/
 LUA_API void lua_pushnil (lua_State *L) {
   lua_lock(L);
   setnilvalue(s2v(L->top.p));
@@ -513,6 +603,9 @@ LUA_API void lua_pushnil (lua_State *L) {
 }
 
 
+/*
+压入数字到栈顶
+*/
 LUA_API void lua_pushnumber (lua_State *L, lua_Number n) {
   lua_lock(L);
   setfltvalue(s2v(L->top.p), n);
@@ -521,6 +614,9 @@ LUA_API void lua_pushnumber (lua_State *L, lua_Number n) {
 }
 
 
+/*
+压入整数到栈顶
+*/
 LUA_API void lua_pushinteger (lua_State *L, lua_Integer n) {
   lua_lock(L);
   setivalue(s2v(L->top.p), n);
@@ -533,6 +629,9 @@ LUA_API void lua_pushinteger (lua_State *L, lua_Integer n) {
 ** Pushes on the stack a string with given length. Avoid using 's' when
 ** 'len' == 0 (as 's' can be NULL in that case), due to later use of
 ** 'memcmp' and 'memcpy'.
+*/
+/*
+压入字符串（指定长度len)到栈顶
 */
 LUA_API const char *lua_pushlstring (lua_State *L, const char *s, size_t len) {
   TString *ts;
@@ -563,6 +662,9 @@ LUA_API const char *lua_pushextlstring (lua_State *L,
 }
 
 
+/*
+* 压入字符串（以\0结束）到栈顶
+*/
 LUA_API const char *lua_pushstring (lua_State *L, const char *s) {
   lua_lock(L);
   if (s == NULL)
@@ -580,6 +682,9 @@ LUA_API const char *lua_pushstring (lua_State *L, const char *s) {
 }
 
 
+/*
+压入格式化字符串到栈顶，接收va_list参数
+*/
 LUA_API const char *lua_pushvfstring (lua_State *L, const char *fmt,
                                       va_list argp) {
   const char *ret;
@@ -591,6 +696,9 @@ LUA_API const char *lua_pushvfstring (lua_State *L, const char *fmt,
 }
 
 
+/*
+* 压入格式化字符串到栈顶，接收...参数
+*/
 LUA_API const char *lua_pushfstring (lua_State *L, const char *fmt, ...) {
   const char *ret;
   va_list argp;
@@ -604,6 +712,9 @@ LUA_API const char *lua_pushfstring (lua_State *L, const char *fmt, ...) {
 }
 
 
+/*
+压入c closure到栈顶
+*/
 LUA_API void lua_pushcclosure (lua_State *L, lua_CFunction fn, int n) {
   lua_lock(L);
   if (n == 0) {
@@ -631,6 +742,9 @@ LUA_API void lua_pushcclosure (lua_State *L, lua_CFunction fn, int n) {
 }
 
 
+/*
+压入bool值到栈顶
+*/
 LUA_API void lua_pushboolean (lua_State *L, int b) {
   lua_lock(L);
   if (b)
@@ -642,6 +756,9 @@ LUA_API void lua_pushboolean (lua_State *L, int b) {
 }
 
 
+/*
+压入light userdata到栈顶
+*/
 LUA_API void lua_pushlightuserdata (lua_State *L, void *p) {
   lua_lock(L);
   setpvalue(s2v(L->top.p), p);
@@ -650,6 +767,9 @@ LUA_API void lua_pushlightuserdata (lua_State *L, void *p) {
 }
 
 
+/*
+压入lua 当前thread到栈顶
+*/
 LUA_API int lua_pushthread (lua_State *L) {
   lua_lock(L);
   setthvalue(L, s2v(L->top.p), L);
@@ -663,7 +783,10 @@ LUA_API int lua_pushthread (lua_State *L) {
 /*
 ** get functions (Lua -> stack)
 */
-
+/*
+获取T的field（k）的值，并压入栈顶
+luaV_fastget成功则直接压入栈顶，否则压入slot（nil）
+*/
 
 static int auxgetstr (lua_State *L, const TValue *t, const char *k) {
   int tag;
@@ -690,6 +813,9 @@ static void getGlobalTable (lua_State *L, TValue *gt) {
 }
 
 
+/*
+获取一个全局field（_G的field）的value，并压入栈顶
+*/
 LUA_API int lua_getglobal (lua_State *L, const char *name) {
   TValue gt;
   lua_lock(L);
@@ -698,6 +824,11 @@ LUA_API int lua_getglobal (lua_State *L, const char *name) {
 }
 
 
+/*
+从idx位置的table获取一个field，栈顶是field
+field对应的value会替换field压进栈顶
+luaV_fastget成功则直接替换栈顶field，否则压入slot（nil）替换栈顶field
+*/
 LUA_API int lua_gettable (lua_State *L, int idx) {
   int tag;
   TValue *t;
@@ -712,12 +843,20 @@ LUA_API int lua_gettable (lua_State *L, int idx) {
 }
 
 
+/*
+从idx位置table获取一个field
+field对应的value会压进栈顶
+*/
 LUA_API int lua_getfield (lua_State *L, int idx, const char *k) {
   lua_lock(L);
   return auxgetstr(L, index2value(L, idx), k);
 }
 
 
+/*
+从idx位置array获取下标n的元素
+下标n对应的value会压进栈顶
+*/
 LUA_API int lua_geti (lua_State *L, int idx, lua_Integer n) {
   TValue *t;
   int tag;
@@ -734,7 +873,9 @@ LUA_API int lua_geti (lua_State *L, int idx, lua_Integer n) {
   return novariant(tag);
 }
 
-
+/*
+完成原始获取操作，并将值压入栈顶
+*/
 static int finishrawget (lua_State *L, int tag) {
   if (tagisempty(tag))  /* avoid copying empty items to the stack */
     setnilvalue(s2v(L->top.p));
@@ -743,7 +884,9 @@ static int finishrawget (lua_State *L, int tag) {
   return novariant(tag);
 }
 
-
+/*
+获取idx位置的table对象
+*/
 l_sinline Table *gettable (lua_State *L, int idx) {
   TValue *t = index2value(L, idx);
   api_check(L, ttistable(t), "table expected");
@@ -751,6 +894,9 @@ l_sinline Table *gettable (lua_State *L, int idx) {
 }
 
 
+/*
+查询idx位置table的原始数据，key在栈顶
+*/
 LUA_API int lua_rawget (lua_State *L, int idx) {
   Table *t;
   int tag;
@@ -763,6 +909,10 @@ LUA_API int lua_rawget (lua_State *L, int idx) {
 }
 
 
+/*
+从idx位置array获取下标n的原始元素
+下标n对应的value会压进栈顶
+*/
 LUA_API int lua_rawgeti (lua_State *L, int idx, lua_Integer n) {
   Table *t;
   int tag;
@@ -773,6 +923,9 @@ LUA_API int lua_rawgeti (lua_State *L, int idx, lua_Integer n) {
 }
 
 
+/*
+查询idx位置table的原始数据，key为p（userdata）
+*/
 LUA_API int lua_rawgetp (lua_State *L, int idx, const void *p) {
   Table *t;
   TValue k;
@@ -782,7 +935,9 @@ LUA_API int lua_rawgetp (lua_State *L, int idx, const void *p) {
   return finishrawget(L, luaH_get(t, &k, s2v(L->top.p)));
 }
 
-
+/*
+创建一个table，并压入栈顶
+*/
 LUA_API void lua_createtable (lua_State *L, unsigned narray, unsigned nrec) {
   Table *t;
   lua_lock(L);
@@ -796,6 +951,9 @@ LUA_API void lua_createtable (lua_State *L, unsigned narray, unsigned nrec) {
 }
 
 
+/*
+查询obj的元表，如果存在则压入栈顶，返回1，否则返回0
+*/
 LUA_API int lua_getmetatable (lua_State *L, int objindex) {
   const TValue *obj;
   Table *mt;
@@ -850,6 +1008,12 @@ LUA_API int lua_getiuservalue (lua_State *L, int idx, int n) {
 /*
 ** t[k] = value at the top of the stack (where 'k' is a string)
 */
+/*
+向tvalue插入field（k）的value，value在栈顶
+luaV_fastget成功后，直接将value替换到原有slot中
+否则压入key，调用luaV_finishset在t建立新kv
+备注：成功执行后恢复堆栈压入的k和v
+*/
 static void auxsetstr (lua_State *L, const TValue *t, const char *k) {
   int hres;
   TString *str = luaS_new(L, k);
@@ -869,6 +1033,9 @@ static void auxsetstr (lua_State *L, const TValue *t, const char *k) {
 }
 
 
+/*
+插入全局变量field（name），value在栈顶
+*/
 LUA_API void lua_setglobal (lua_State *L, const char *name) {
   TValue gt;
   lua_lock(L);  /* unlock done in 'auxsetstr' */
@@ -877,6 +1044,10 @@ LUA_API void lua_setglobal (lua_State *L, const char *name) {
 }
 
 
+/*
+向idx位置的table插入键值对，栈顶分别是value（-2）和key（-2）
+执行成功后恢复堆栈，弹出k和v（L->top -= 2）
+*/
 LUA_API void lua_settable (lua_State *L, int idx) {
   TValue *t;
   int hres;
@@ -894,12 +1065,18 @@ LUA_API void lua_settable (lua_State *L, int idx) {
 }
 
 
+/*
+向table里插入一个field，value在栈顶，执行后value出栈
+*/
 LUA_API void lua_setfield (lua_State *L, int idx, const char *k) {
   lua_lock(L);  /* unlock done in 'auxsetstr' */
   auxsetstr(L, index2value(L, idx), k);
 }
 
 
+/*
+向array里设置下标n位置的value，value在栈顶，最后弹出value
+*/
 LUA_API void lua_seti (lua_State *L, int idx, lua_Integer n) {
   TValue *t;
   int hres;
@@ -919,6 +1096,9 @@ LUA_API void lua_seti (lua_State *L, int idx, lua_Integer n) {
 }
 
 
+/*
+向idx位置的table里设置key的value，value在栈顶，最后弹出n个
+*/
 static void aux_rawset (lua_State *L, int idx, TValue *key, int n) {
   Table *t;
   lua_lock(L);
@@ -932,11 +1112,17 @@ static void aux_rawset (lua_State *L, int idx, TValue *key, int n) {
 }
 
 
+/*
+向idx位置的table里设置key的value，key在栈顶，value在次栈顶，最后弹出key和value
+*/
 LUA_API void lua_rawset (lua_State *L, int idx) {
   aux_rawset(L, idx, s2v(L->top.p - 2), 2);
 }
 
 
+/*
+向idx位置的table里设置udata（p）的值，value在栈顶，最后弹出value
+*/
 LUA_API void lua_rawsetp (lua_State *L, int idx, const void *p) {
   TValue k;
   setpvalue(&k, cast_voidp(p));
@@ -944,6 +1130,9 @@ LUA_API void lua_rawsetp (lua_State *L, int idx, const void *p) {
 }
 
 
+/*
+向idx位置的array里设置下标n的value，value在栈顶，最后弹出value
+*/
 LUA_API void lua_rawseti (lua_State *L, int idx, lua_Integer n) {
   Table *t;
   lua_lock(L);
@@ -1242,6 +1431,9 @@ LUA_API int lua_gc (lua_State *L, int what, ...) {
 */
 
 
+/*
+lua抛出一个错误信息
+*/
 LUA_API int lua_error (lua_State *L) {
   TValue *errobj;
   lua_lock(L);
@@ -1257,6 +1449,12 @@ LUA_API int lua_error (lua_State *L) {
 }
 
 
+/*
+判断一个表是否还有下一个元素
+调用前需要先压入一个值用来存储key
+如果存在下一个元素，则将value设置到栈顶-1，再将key压到栈顶，栈顶+1
+如果不存在则栈顶-1
+*/
 LUA_API int lua_next (lua_State *L, int idx) {
   Table *t;
   int more;
@@ -1303,6 +1501,9 @@ LUA_API void lua_concat (lua_State *L, int n) {
 }
 
 
+/*
+返回obj的长度
+*/
 LUA_API void lua_len (lua_State *L, int idx) {
   TValue *t;
   lua_lock(L);
@@ -1313,6 +1514,9 @@ LUA_API void lua_len (lua_State *L, int idx) {
 }
 
 
+/*
+获取内存分配函数地址
+*/
 LUA_API lua_Alloc lua_getallocf (lua_State *L, void **ud) {
   lua_Alloc f;
   lua_lock(L);
@@ -1323,6 +1527,9 @@ LUA_API lua_Alloc lua_getallocf (lua_State *L, void **ud) {
 }
 
 
+/*
+设置内存分配函数地址
+*/
 LUA_API void lua_setallocf (lua_State *L, lua_Alloc f, void *ud) {
   lua_lock(L);
   G(L)->ud = ud;

@@ -691,6 +691,9 @@
 #endif
 
 
+/*
+* likely/unlikely编译器优化性能
+*/
 #if defined(LUA_CORE) || defined(LUA_LIB)
 /* shorter names for Lua's own use */
 #define l_likely(x)	luai_likely(x)

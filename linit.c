@@ -1,4 +1,4 @@
-/*
+﻿/*
 ** $Id: linit.c $
 ** Initialization of libraries for lua.c and other clients
 ** See Copyright Notice in lua.h
@@ -39,6 +39,9 @@ static const luaL_Reg stdlibs[] = {
 };
 
 
+/*
+注册lua的基础库代码
+*/
 /*
 ** require and preload selected standard libraries
 */

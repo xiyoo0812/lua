@@ -68,6 +68,14 @@ const TValue *luaT_gettm (Table *events, TMS event, TString *ename) {
 }
 
 
+/*
+查找对象o的指定元方法
+1）判断对象o的类型
+1.1）如果是table，则找到该表的元表
+1.2）如果是userdata，也找到该对象的元表
+1.3）其他类型则取出类型默认元表
+2）如果元表存在，返回该元表的TMS，否则返回nil
+*/
 const TValue *luaT_gettmbyobj (lua_State *L, const TValue *o, TMS event) {
   Table *mt;
   switch (ttype(o)) {

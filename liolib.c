@@ -1,4 +1,4 @@
-/*
+﻿/*
 ** $Id: liolib.c $
 ** Standard I/O (and system) library
 ** See Copyright Notice in lua.h
@@ -36,6 +36,11 @@
 #define L_MODEEXT	"b"
 #endif
 
+/*
+检查模式是否合法，满足正则表达式[rwa]\+?[b]*
+strchr(str, c): 在str中查询第一个c出现位置，没有则返回null
+strspn(str1, str2): 检索字符串 str1 中第一个不在字符串 str2 中出现的字符下标
+*/
 /* Check whether 'mode' matches '[rwa]%+?[L_MODEEXT]*' */
 static int l_checkmode (const char *mode) {
   return (*mode != '\0' && strchr("rwa", *(mode++)) != NULL &&
@@ -160,6 +165,9 @@ typedef luaL_Stream LStream;
 #define isclosed(p)	((p)->closef == NULL)
 
 
+/*
+检测一个变量是否文件句柄
+*/
 static int io_type (lua_State *L) {
   LStream *p;
   luaL_checkany(L, 1);
@@ -174,6 +182,9 @@ static int io_type (lua_State *L) {
 }
 
 
+/*
+打印一个文件句柄
+*/
 static int f_tostring (lua_State *L) {
   LStream *p = tolstream(L);
   if (isclosed(p))
@@ -184,6 +195,9 @@ static int f_tostring (lua_State *L) {
 }
 
 
+/*
+将lua文件句柄转换成FILE指针
+*/
 static FILE *tofile (lua_State *L) {
   LStream *p = tolstream(L);
   if (l_unlikely(isclosed(p)))
@@ -198,6 +212,9 @@ static FILE *tofile (lua_State *L) {
 ** before opening the actual file; so, if there is a memory error, the
 ** handle is in a consistent state.
 */
+/*
+创建一个文件句柄，并压入栈顶
+*/
 static LStream *newprefile (lua_State *L) {
   LStream *p = (LStream *)lua_newuserdatauv(L, sizeof(LStream), 0);
   p->closef = NULL;  /* mark file handle as 'closed' */
@@ -211,6 +228,9 @@ static LStream *newprefile (lua_State *L) {
 ** a bug in some versions of the Clang compiler (e.g., clang 3.0 for
 ** 32 bits).
 */
+/*
+关闭一个文件句柄
+*/
 static int aux_close (lua_State *L) {
   LStream *p = tolstream(L);
   volatile lua_CFunction cf = p->closef;
@@ -219,12 +239,18 @@ static int aux_close (lua_State *L) {
 }
 
 
+/*
+关闭文件
+*/
 static int f_close (lua_State *L) {
   tofile(L);  /* make sure argument is an open stream */
   return aux_close(L);
 }
 
 
+/*
+关闭文件
+*/
 static int io_close (lua_State *L) {
   if (lua_isnone(L, 1))  /* no argument? */
     lua_getfield(L, LUA_REGISTRYINDEX, IO_OUTPUT);  /* use default output */
@@ -232,6 +258,9 @@ static int io_close (lua_State *L) {
 }
 
 
+/*
+文件对象gc处理
+*/
 static int f_gc (lua_State *L) {
   LStream *p = tolstream(L);
   if (!isclosed(p) && p->f != NULL)
@@ -243,6 +272,9 @@ static int f_gc (lua_State *L) {
 /*
 ** function to close regular files
 */
+/*
+系统级别关闭文件
+*/
 static int io_fclose (lua_State *L) {
   LStream *p = tolstream(L);
   int res = fclose(p->f);
@@ -250,6 +282,9 @@ static int io_fclose (lua_State *L) {
 }
 
 
+/*
+创建新的文件对象
+*/
 static LStream *newfile (lua_State *L) {
   LStream *p = newprefile(L);
   p->f = NULL;
@@ -258,6 +293,9 @@ static LStream *newfile (lua_State *L) {
 }
 
 
+/*
+检测文件能否打开
+*/
 static void opencheck (lua_State *L, const char *fname, const char *mode) {
   LStream *p = newfile(L);
   p->f = fopen(fname, mode);
@@ -266,6 +304,10 @@ static void opencheck (lua_State *L, const char *fname, const char *mode) {
 }
 
 
+/*
+打开一个文件
+luaL_argcheck: 参数检测，失败输出相应text
+*/
 static int io_open (lua_State *L) {
   const char *filename = luaL_checkstring(L, 1);
   const char *mode = luaL_optstring(L, 2, "r");
@@ -287,6 +329,9 @@ static int io_pclose (lua_State *L) {
 }
 
 
+/*
+popen，成功返回true，失败返回nil, err_string, err_code
+*/
 static int io_popen (lua_State *L) {
   const char *filename = luaL_checkstring(L, 1);
   const char *mode = luaL_optstring(L, 2, "r");
@@ -298,6 +343,9 @@ static int io_popen (lua_State *L) {
 }
 
 
+/*
+创建临时文件对象，成功返回true，失败返回nil, err_string, err_code
+*/
 static int io_tmpfile (lua_State *L) {
 #if defined(__ORBIS__) || defined(__PROSPERO__) /* PlayStation 4 and 5 */
     return 0;
@@ -309,6 +357,9 @@ static int io_tmpfile (lua_State *L) {
 }
 
 
+/*
+返回指定findex位置的io文件句柄
+*/
 static FILE *getiofile (lua_State *L, const char *findex) {
   LStream *p;
   lua_getfield(L, LUA_REGISTRYINDEX, findex);
@@ -319,6 +370,10 @@ static FILE *getiofile (lua_State *L, const char *findex) {
 }
 
 
+/*
+获取io文件对象
+如果存在filename或者file参数则是先设置后获取
+*/
 static int g_iofile (lua_State *L, const char *f, const char *mode) {
   if (!lua_isnoneornil(L, 1)) {
     const char *filename = lua_tostring(L, 1);
@@ -336,16 +391,27 @@ static int g_iofile (lua_State *L, const char *f, const char *mode) {
 }
 
 
+/*
+获取标准输入对象
+如果存在filename或者file参数则是先设置后获取
+*/
 static int io_input (lua_State *L) {
   return g_iofile(L, IO_INPUT, "r");
 }
 
 
+/*
+获取标准输出对象
+如果存在filename或者file参数则是先设置后获取
+*/
 static int io_output (lua_State *L) {
   return g_iofile(L, IO_OUTPUT, "w");
 }
 
 
+/*
+声明io库函数readline
+*/
 static int io_readline (lua_State *L);
 
 
@@ -364,6 +430,9 @@ static int io_readline (lua_State *L);
 ** 3) a boolean, true iff file has to be closed when finished ('toclose')
 ** *) a variable number of format arguments (rest of the stack)
 */
+/*
+执行压入闭包函数readline以及它的upvalue
+*/
 static void aux_lines (lua_State *L, int toclose) {
   int n = lua_gettop(L) - 1;  /* number of arguments to read */
   luaL_argcheck(L, n <= MAXARGLINE, MAXARGLINE + 2, "too many arguments");
@@ -375,6 +444,9 @@ static void aux_lines (lua_State *L, int toclose) {
 }
 
 
+/*
+返回函数readline
+*/
 static int f_lines (lua_State *L) {
   tofile(L);  /* check that it's a valid file handle */
   aux_lines(L, 0);
@@ -661,6 +733,9 @@ static int io_readline (lua_State *L) {
 /* }====================================================== */
 
 
+/*
+写入数据的实现
+*/
 static int g_write (lua_State *L, FILE *f, int arg) {
   int nargs = lua_gettop(L) - arg;
   int status = 1;
@@ -686,11 +761,18 @@ static int g_write (lua_State *L, FILE *f, int arg) {
 }
 
 
+/*
+向标准输出写入数据
+*/
 static int io_write (lua_State *L) {
   return g_write(L, getiofile(L, IO_OUTPUT), 1);
 }
 
 
+/*
+向文件写入数据
+此次和io方法不同的是
+*/
 static int f_write (lua_State *L) {
   FILE *f = tofile(L);
   lua_pushvalue(L, 1);  /* push file at the stack top (to be returned) */
@@ -717,6 +799,9 @@ static int f_seek (lua_State *L) {
 }
 
 
+/*
+设置输出文件缓冲区的模式
+*/
 static int f_setvbuf (lua_State *L) {
   static const int mode[] = {_IONBF, _IOFBF, _IOLBF};
   static const char *const modenames[] = {"no", "full", "line", NULL};
@@ -729,11 +814,17 @@ static int f_setvbuf (lua_State *L) {
 
 
 
+/*
+将缓冲区数据强制写入到标准输出的文件
+*/
 static int io_flush (lua_State *L) {
   return luaL_fileresult(L, fflush(getiofile(L, IO_OUTPUT)) == 0, NULL);
 }
 
 
+/*
+将缓冲区数据强制写入到对应文件
+*/
 static int f_flush (lua_State *L) {
   return luaL_fileresult(L, fflush(tofile(L)) == 0, NULL);
 }
@@ -785,6 +876,9 @@ static const luaL_Reg metameth[] = {
 };
 
 
+/*
+创建lua文件对象的元表，设置元方法
+*/
 static void createmeta (lua_State *L) {
   luaL_newmetatable(L, LUA_FILEHANDLE);  /* metatable for file handles */
   luaL_setfuncs(L, metameth, 0);  /* add metamethods to new metatable */
@@ -798,6 +892,9 @@ static void createmeta (lua_State *L) {
 /*
 ** function to (not) close the standard files stdin, stdout, and stderr
 */
+/*
+不用关闭文件的close调用，通常用于标准io对象
+*/
 static int io_noclose (lua_State *L) {
   LStream *p = tolstream(L);
   p->closef = &io_noclose;  /* keep file opened */
@@ -807,6 +904,9 @@ static int io_noclose (lua_State *L) {
 }
 
 
+/*
+创建标准IO文件对象，如果K存在则加到registry
+*/
 static void createstdfile (lua_State *L, FILE *f, const char *k,
                            const char *fname) {
   LStream *p = newprefile(L);
@@ -820,6 +920,9 @@ static void createstdfile (lua_State *L, FILE *f, const char *k,
 }
 
 
+/*
+新建io库，创建FILE的元表，创建3个标准IO对象
+*/
 LUAMOD_API int luaopen_io (lua_State *L) {
   luaL_newlib(L, iolib);  /* new module */
   createmeta(L);

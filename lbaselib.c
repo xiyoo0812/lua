@@ -319,6 +319,11 @@ static int luaB_ipairs (lua_State *L) {
 }
 
 
+/*
+* ����lua�ļ�/����string�ȵĸ�������
+* �ɹ����env���õ����صĺ����ĵ�һ��upvalue
+* ʧ�ܷ���nil��err
+*/
 static int load_aux (lua_State *L, int status, int envidx) {
   if (l_likely(status == LUA_OK)) {
     if (envidx != 0) {  /* 'env' parameter? */
@@ -391,6 +396,11 @@ static const char *generic_reader (lua_State *L, void *ud, size_t *size) {
 }
 
 
+/*
+* ȫ�ֺ���load����string��ʵ��
+* �ɹ�����loadfunc
+* ʧ�ܷ���nil��err
+*/
 static int luaB_load (lua_State *L) {
   int status;
   size_t l;
@@ -419,6 +429,10 @@ static int dofilecont (lua_State *L, int d1, lua_KContext d2) {
 }
 
 
+/*
+* ȫ�ֺ���dofile�����ļ���ִ�е�ʵ��
+* �ɹ�����nil��ʧ�ܷ���err
+*/
 static int luaB_dofile (lua_State *L) {
   const char *fname = luaL_optstring(L, 1, NULL);
   lua_settop(L, 1);

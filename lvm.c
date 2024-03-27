@@ -1,4 +1,4 @@
-/*
+﻿/*
 ** $Id: lvm.c $
 ** Lua virtual machine
 ** See Copyright Notice in lua.h
@@ -635,6 +635,9 @@ static void copy2buff (StkId top, int n, char *buff) {
 ** Main operation for concatenation: concat 'total' values in the stack,
 ** from 'L->top.p - total' up to 'L->top.p - 1'.
 */
+/*
+连接栈顶的total个元素（L->top - total -> L->top - 1）
+*/
 void luaV_concat (lua_State *L, int total) {
   if (total == 1)
     return;  /* "all" values already concatenated */
@@ -681,6 +684,9 @@ void luaV_concat (lua_State *L, int total) {
 
 /*
 ** Main operation 'ra = #rb'.
+*/
+/*
+查询obj的长度，并压入栈顶
 */
 void luaV_objlen (lua_State *L, StkId ra, const TValue *rb) {
   const TValue *tm;
