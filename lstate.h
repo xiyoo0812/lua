@@ -127,7 +127,11 @@ struct lua_longjmp;  /* defined in ldo.c */
 ** is thread safe
 */
 #if !defined(l_signalT)
+#if defined(__ORBIS__) || defined(__PROSPERO__) /* PlayStation 4 and 5 */
+#include <sys/signal.h>
+#else
 #include <signal.h>
+#endif
 #define l_signalT	sig_atomic_t
 #endif
 

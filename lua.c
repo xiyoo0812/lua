@@ -13,7 +13,11 @@
 #include <stdlib.h>
 #include <string.h>
 
+#if defined(__ORBIS__) || defined(__PROSPERO__) /* PlayStation 4 and 5 */
+#include <sys/signal.h>
+#else
 #include <signal.h>
+#endif
 
 #include "lua.h"
 
@@ -52,7 +56,11 @@ static void setsignal (int sig, void (*handler)(int)) {
 
 #else           /* }{ */
 
+#if defined(__ORBIS__) || defined(__PROSPERO__) /* PlayStation 4 and 5 */
+#define setsignal(a,b)
+#else
 #define setsignal            signal
+#endif
 
 #endif                               /* } */
 
@@ -372,11 +380,15 @@ static int runargs (lua_State *L, char **argv, int n) {
 
 static int handle_luainit (lua_State *L) {
   const char *name = "=" LUA_INITVARVERSION;
+#if defined(__ORBIS__) || defined(__PROSPERO__) /* PlayStation 4 and 5 */
+  const char* init = NULL;
+#else
   const char *init = getenv(name + 1);
   if (init == NULL) {
     name = "=" LUA_INIT_VAR;
     init = getenv(name + 1);  /* try alternative name */
   }
+#endif
   if (init == NULL) return LUA_OK;
   else if (init[0] == '@')
     return dofile(L, init+1);
