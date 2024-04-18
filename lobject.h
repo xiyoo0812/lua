@@ -256,6 +256,8 @@ typedef union {
 
 
 #define l_isfalse(o)	(ttisfalse(o) || ttisnil(o))
+#define tagisfalse(t)	((t) == LUA_VFALSE || novariant(t) == LUA_TNIL)
+
 
 
 #define setbfvalue(obj)		settt_(obj, LUA_VFALSE)
@@ -771,15 +773,12 @@ typedef union Node {
 #define setnorealasize(t)	((t)->flags |= BITRAS)
 
 
-typedef struct ArrayCell ArrayCell;
-
-
 typedef struct Table {
   CommonHeader;
   lu_byte flags;  /* 1<<p means tagmethod(p) is not present */
   lu_byte lsizenode;  /* log2 of size of 'node' array */
   unsigned int alimit;  /* "limit" of 'array' array */
-  ArrayCell *array;  /* array part */
+  Value *array;  /* array part */
   Node *node;
   struct Table *metatable;
   GCObject *gclist;
